@@ -1,0 +1,88 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "CHIS Coding Hub API",
+    "description": "Secure API proxy for searching Community Health Information System (CHIS) medical codes.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://chis-coding-hub.cphbngl.chatgpt.site",
+      "description": "Production gateway server"
+    }
+  ],
+  "paths": {
+    "/api/search": {
+      "get": {
+        "operationId": "searchCHISCodes",
+        "summary": "Search CHIS ICD-10 and RVS codes",
+        "description": "Finds PhilHealth case rates, hospital fees, and professional fees matching a code or diagnosis keyword.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Search keyword (e.g. E11.9, J18.9, appendectomy, or diagnosis description)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of matching ICD or RVS codes and case rates.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "code": {
+                        "type": "string"
+                      },
+                      "description": {
+                        "type": "string"
+                      },
+                      "caseRate": {
+                        "type": "number"
+                      },
+                      "hospitalFee": {
+                        "type": "number"
+                      },
+                      "professionalFee": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized token"
+          }
+        },
+        "security": [
+          {
+            "oauth2": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "oauth2": {
+        "type": "oauth2",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://chis-coding-hub.cphbngl.chatgpt.site/oauth/authorize",
+            "tokenUrl": "https://chis-coding-hub.cphbngl.chatgpt.site/oauth/token",
+            "scopes": {}
+          }
+        }
+      }
+    }
+  }
+}

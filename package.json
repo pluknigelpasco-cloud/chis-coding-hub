@@ -1,0 +1,11 @@
+{
+  "name": "chis-coding-hub",
+  "version": "1.0.0",
+  "description": "ChatGPT Action & OAuth Proxy for CHIS-Phoenix",
+  "main": "api/search.js",
+  "scripts": {
+    "vercel-dev": "vercel dev"
+  },
+  "private": true,
+  "dependencies": {}
+}

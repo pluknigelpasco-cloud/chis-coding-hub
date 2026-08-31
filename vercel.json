@@ -1,0 +1,24 @@
+{
+  "version": 2,
+  "name": "chis-coding-hub",
+  "builds": [
+    {
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/oauth/authorize",
+      "dest": "/api/oauth/authorize"
+    },
+    {
+      "src": "/oauth/token",
+      "dest": "/api/oauth/token"
+    },
+    {
+      "src": "/api/search",
+      "dest": "/api/search"
+    }
+  ]
+}
