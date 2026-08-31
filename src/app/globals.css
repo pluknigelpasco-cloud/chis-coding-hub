@@ -1,0 +1,216 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-inter: 'Inter', sans-serif;
+  --bg-app: #f1f5f9;
+  --card-bg: #ffffff;
+  --card-border: #e2e8f0;
+  --text-main: #0f172a;
+  --text-sub: #64748b;
+  --primary: #0284c7;
+  --primary-hover: #0369a1;
+  --primary-light: #e0f2fe;
+  --sidebar-bg: linear-gradient(180deg, #07172c 0%, #0c2340 50%, #07172c 100%);
+  --hero-bg: linear-gradient(135deg, #07172c 0%, #0284c7 60%, #0369a1 100%);
+  --accent-color: #0284c7;
+  --badge-bg: #e0f2fe;
+  --badge-text: #0369a1;
+}
+
+/* 💎 Theme 1: Executive Sapphire */
+[data-theme='sapphire'] {
+  --bg-app: #f0f5fa;
+  --card-bg: #ffffff;
+  --card-border: #cbd5e1;
+  --text-main: #0f172a;
+  --text-sub: #475569;
+  --primary: #0284c7;
+  --primary-hover: #0369a1;
+  --primary-light: #e0f2fe;
+  --sidebar-bg: linear-gradient(180deg, #07172c 0%, #0c2340 50%, #051427 100%);
+  --hero-bg: linear-gradient(135deg, #07172c 0%, #0284c7 65%, #38bdf8 100%);
+  --accent-color: #0284c7;
+  --badge-bg: #e0f2fe;
+  --badge-text: #0284c7;
+}
+
+/* 🌿 Theme 2: Medical Emerald */
+[data-theme='emerald'] {
+  --bg-app: #f0fdf4;
+  --card-bg: #ffffff;
+  --card-border: #bbf7d0;
+  --text-main: #064e3b;
+  --text-sub: #374151;
+  --primary: #059669;
+  --primary-hover: #047857;
+  --primary-light: #d1fae5;
+  --sidebar-bg: linear-gradient(180deg, #022c22 0%, #064e3b 50%, #022c22 100%);
+  --hero-bg: linear-gradient(135deg, #022c22 0%, #059669 65%, #34d399 100%);
+  --accent-color: #059669;
+  --badge-bg: #d1fae5;
+  --badge-text: #065f46;
+}
+
+/* 🏛️ Theme 3: Balamban Royal Azure */
+[data-theme='royal'] {
+  --bg-app: #eff6ff;
+  --card-bg: #ffffff;
+  --card-border: #bfdbfe;
+  --text-main: #1e3a8a;
+  --text-sub: #475569;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-light: #dbeafe;
+  --sidebar-bg: linear-gradient(180deg, #172554 0%, #1e3a8a 50%, #0f172a 100%);
+  --hero-bg: linear-gradient(135deg, #172554 0%, #2563eb 65%, #60a5fa 100%);
+  --accent-color: #2563eb;
+  --badge-bg: #dbeafe;
+  --badge-text: #1e40af;
+}
+
+/* 🌙 Theme 4: Midnight AMOLED Dark Mode */
+[data-theme='midnight'] {
+  --bg-app: #090d16;
+  --card-bg: #111827;
+  --card-border: rgba(255, 255, 255, 0.1);
+  --text-main: #f8fafc;
+  --text-sub: #94a3b8;
+  --primary: #38bdf8;
+  --primary-hover: #0ea5e9;
+  --primary-light: rgba(56, 189, 248, 0.15);
+  --sidebar-bg: linear-gradient(180deg, #030712 0%, #0b0f19 50%, #030712 100%);
+  --hero-bg: linear-gradient(135deg, #030712 0%, #0f172a 60%, #1e293b 100%);
+  --accent-color: #38bdf8;
+  --badge-bg: rgba(56, 189, 248, 0.15);
+  --badge-text: #38bdf8;
+}
+
+/* Base Body Styles */
+body {
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  color: var(--text-main);
+  background-color: var(--bg-app);
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Global Dynamic Theme Components */
+.theme-sidebar {
+  background: var(--sidebar-bg) !important;
+}
+
+.theme-hero {
+  background: var(--hero-bg) !important;
+}
+
+.theme-card {
+  background-color: var(--card-bg) !important;
+  border-color: var(--card-border) !important;
+}
+
+.theme-primary-btn {
+  background-color: var(--primary) !important;
+  color: #ffffff !important;
+}
+.theme-primary-btn:hover {
+  background-color: var(--primary-hover) !important;
+}
+
+.theme-badge {
+  background-color: var(--badge-bg) !important;
+  color: var(--badge-text) !important;
+}
+
+.theme-accent-text {
+  color: var(--primary) !important;
+}
+
+/* Dark Mode Overrides for standard utility classes */
+[data-theme='midnight'] .bg-white {
+  background-color: #111827 !important;
+  color: #f8fafc !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme='midnight'] .bg-slate-50 {
+  background-color: #1e293b !important;
+}
+
+[data-theme='midnight'] .bg-slate-100 {
+  background-color: #1f2937 !important;
+}
+
+[data-theme='midnight'] .text-slate-900,
+[data-theme='midnight'] .text-slate-800,
+[data-theme='midnight'] .text-slate-700 {
+  color: #f8fafc !important;
+}
+
+[data-theme='midnight'] .text-slate-600,
+[data-theme='midnight'] .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+[data-theme='midnight'] .border-slate-200,
+[data-theme='midnight'] .border-slate-100,
+[data-theme='midnight'] .border-slate-300 {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme='midnight'] select,
+[data-theme='midnight'] input {
+  background-color: #1f2937 !important;
+  color: #f8fafc !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.logo-circle {
+  clip-path: circle(49% at 50% 50%);
+  border-radius: 9999px;
+  object-fit: cover;
+}
+
+@media print {
+  @page {
+    size: landscape;
+    margin: 8mm;
+  }
+
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  aside,
+  header,
+  nav,
+  .print-hidden,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  .print-container-overlay {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+    display: block !important;
+  }
+
+  .print-container-card {
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  .print-page-break {
+    page-break-after: always;
+    break-after: page;
+  }
+}

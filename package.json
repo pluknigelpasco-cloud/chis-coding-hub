@@ -1,12 +1,33 @@
 {
-  "name": "chis-coding-hub",
-  "version": "1.0.0",
-  "description": "CHIS-Phoenix Standalone Vercel App",
-  "main": "api/proxy.js",
-  "scripts": {
-    "build": "node build.js",
-    "start": "node build.js && vercel dev"
-  },
+  "name": "cph-transmittal-monitor",
+  "version": "4.0.0",
   "private": true,
-  "dependencies": {}
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.48.1",
+    "clsx": "^2.1.1",
+    "date-fns": "^3.6.0",
+    "lucide-react": "^0.475.0",
+    "next": "^14.2.23",
+    "pdf-parse": "^1.1.1",
+    "pdfjs-dist": "^3.11.174",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^2.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.19",
+    "@types/pdf-parse": "^1.1.4",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.5.2",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.3"
+  }
 }
