@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <base target="_top">
+
+    <!-- Critical for proper phone/tablet rendering -->
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+    <meta
+        name="theme-color"
+        content="#0B5394">
+
+    <title>CHIS</title>
+
+    <?!= include("style"); ?>
+</head>
+
+<body>
+
+<!-- =========================================
+     CHIS APP HEADER
+========================================= -->
+<header class="app-bar">
+
+    <div class="app-bar-left">
+
+        <!-- MOBILE MENU BUTTON -->
+        <button
+            id="mobileMenuButton"
+            class="mobile-menu-toggle"
+            type="button"
+            aria-label="Open navigation"
+            aria-controls="appSidebar"
+            aria-expanded="false">
+            <span aria-hidden="true">☰</span>
+        </button>
+
+        <!-- APP BRAND -->
+        <div class="app-brand">
+
+            <div class="app-brand-icon" aria-hidden="true">
+                🏥
+            </div>
+
+            <div class="app-brand-text">
+
+                <div class="app-title">
+                    CHIS
+                </div>
+
+                <div class="app-subtitle">
+                    Community Health Information System
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- HEADER RIGHT SIDE -->
+    <div class="header-right">
+
+        <div class="header-user-area">
+
+            <div
+                id="headerUserName"
+                class="header-user-name">
+                CHIS User
+            </div>
+
+            <button
+                id="logoutButton"
+                class="logout-btn"
+                type="button"
+                onclick="logoutCHIS()">
+
+                <span
+                    class="logout-icon"
+                    aria-hidden="true">
+                    🚪
+                </span>
+
+                <span class="logout-text">
+                    Logout
+                </span>
+
+            </button>
+
+        </div>
+
+        <div class="app-version">
+            v3.2.0
+        </div>
+
+        <div class="header-logos">
+
+            <img
+                src="https://drive.google.com/thumbnail?id=1iLOxe2hFXVdWI9jTu2OnP9vhF8pJgBfo&sz=w500"
+                alt="Province of Cebu Official Seal"
+                class="header-logo capitol-logo">
+
+            <img
+                src="https://drive.google.com/thumbnail?id=13oM-EHr9WGWVdxl_R-hbI9srQCKDmJk1&sz=w500"
+                alt="Cebu Provincial Hospital - Balamban"
+                class="header-logo hospital-logo">
+
+        </div>
+
+    </div>
+
+</header>
+
+<!-- =========================================
+     MOBILE DRAWER OVERLAY
+========================================= -->
+<div
+    id="sidebarOverlay"
+    class="sidebar-overlay"
+    aria-hidden="true">
+</div>
+
+<!-- =========================================
+     MAIN APPLICATION
+========================================= -->
+<div class="container">
+
+    <!-- =====================================
+         NAVIGATION SIDEBAR / MOBILE DRAWER
+    ====================================== -->
+    <aside
+        id="appSidebar"
+        class="sidebar"
+        aria-label="CHIS navigation"
+        aria-hidden="false">
+
+        <!-- MOBILE DRAWER HEADER -->
+        <div class="sidebar-mobile-header">
+
+            <div class="sidebar-mobile-brand">
+
+                <span
+                    class="sidebar-mobile-icon"
+                    aria-hidden="true">
+                    🏥
+                </span>
+
+                <div>
+                    <strong>CHIS</strong>
+                    <small>Navigation</small>
+                </div>
+
+            </div>
+
+            <button
+                id="closeSidebarButton"
+                class="sidebar-close-button"
+                type="button"
+                aria-label="Close navigation">
+                ✕
+            </button>
+
+        </div>
+
+        <div class="sidebar-content">
+
+            <h3>Navigation</h3>
+
+            <nav class="sidebar-navigation">
+
+                <button
+                    class="menu-btn dashboard-menu-btn active"
+                    id="menuDashboard"
+                    type="button">
+
+                    <span class="menu-icon" aria-hidden="true">▦</span>
+                    <span class="menu-label">Dashboard</span>
+
+                </button>
+
+                <button
+                    class="menu-btn ai-menu-btn"
+                    id="menuAICoding"
+                    type="button">
+
+                    <span class="menu-icon" aria-hidden="true">✦</span>
+                    <span class="menu-label">AI Coding Assistant</span>
+
+                </button>
+
+                <button
+                    class="menu-btn transmittal-menu-btn"
+                    id="menuTransmittal"
+                    type="button">
+
+                    <span class="menu-icon" aria-hidden="true">⇄</span>
+                    <span class="menu-label">Transmittal Monitoring</span>
+
+                </button>
+
+                <button
+                    class="menu-btn"
+                    id="menuSearch"
+                    type="button">
+
+                    <span
+                        class="menu-icon"
+                        aria-hidden="true">
+                        🔍
+                    </span>
+
+                    <span class="menu-label">
+                        Search
+                    </span>
+
+                </button>
+
+                <button
+                    class="menu-btn"
+                    id="menuFavorites"
+                    type="button">
+
+                    <span
+                        class="menu-icon"
+                        aria-hidden="true">
+                        ⭐
+                    </span>
+
+                    <span class="menu-label">
+                        Favorites
+                    </span>
+
+                </button>
+
+                <button
+                    class="menu-btn"
+                    id="menuHistory"
+                    type="button">
+
+                    <span
+                        class="menu-icon"
+                        aria-hidden="true">
+                        🕘
+                    </span>
+
+                    <span class="menu-label">
+                        History
+                    </span>
+
+                </button>
+
+                <button
+                    class="menu-btn"
+                    id="menuSettings"
+                    type="button">
+
+                    <span
+                        class="menu-icon"
+                        aria-hidden="true">
+                        ⚙️
+                    </span>
+
+                    <span class="menu-label">
+                        Settings
+                    </span>
+
+                </button>
+
+                <!-- ADMIN ONLY -->
+                <button
+                    class="menu-btn admin-menu-btn"
+                    id="menuUserManagement"
+                    type="button">
+
+                    <span
+                        class="menu-icon"
+                        aria-hidden="true">
+                        👥
+                    </span>
+
+                    <span class="menu-label">
+                        User Management
+                    </span>
+
+                    <span
+                        id="pendingUsersBadge"
+                        class="pending-users-badge">
+                        0
+                    </span>
+
+                </button>
+
+            </nav>
+
+        </div>
+
+        <div class="sidebar-footer">
+
+            <div class="sidebar-footer-title">
+                Community Health Information System
+            </div>
+
+            <div class="sidebar-footer-version">
+                Version 3.2.0 Phoenix · RC4-014
+            </div>
+
+        </div>
+
+    </aside>
+
+    <!-- =====================================
+         MAIN CONTENT
+    ====================================== -->
+    <main class="content">
+
+        <!-- SEARCH BAR -->
+        <section
+            class="search-panel"
+            style="display:none"
+            aria-label="CHIS database search">
+
+            <div class="search-box">
+
+                <span
+                    class="search-input-icon"
+                    aria-hidden="true">
+                    🔍
+                </span>
+
+                <input
+                    id="search"
+                    type="search"
+                    placeholder="Search ICD, diagnosis, procedure, RVS, or package code..."
+                    autocomplete="off"
+                    inputmode="search"
+                    aria-label="Search CHIS database">
+
+                <button
+                    id="clearSearchButton"
+                    class="clear-search-button"
+                    type="button"
+                    onclick="clearCHISSearch()"
+                    title="Clear search"
+                    aria-label="Clear search">
+                    ✕
+                </button>
+
+            </div>
+
+        </section>
+
+        <!-- =================================
+             RESULTS AREA
+        ================================== -->
+        <section id="results">
+
+            <div class="welcome">
+
+                <div class="welcome-hero">
+
+                    <div
+                        class="welcome-icon"
+                        aria-hidden="true">
+                        🏥
+                    </div>
+
+                    <div class="welcome-copy">
+
+                        <p
+                            id="welcomeGreeting"
+                            class="welcome-eyebrow">
+                            Welcome
+                        </p>
+
+                        <h1>
+                            Community Health Information System
+                        </h1>
+
+                        <p class="welcome-description">
+                            Search ICD-10, RVS, procedures,
+                            package codes and PhilHealth case rates.
+                        </p>
+
+                    </div>
+
+                </div>
+
+                <div class="welcome-section">
+
+                    <div class="welcome-section-heading">
+
+                        <div>
+                            <span class="welcome-section-label">
+                                Quick actions
+                            </span>
+
+                            <h2>
+                                What would you like to do?
+                            </h2>
+                        </div>
+
+                    </div>
+
+                    <div class="quick-actions-grid">
+
+                        <button
+                            class="quick-action-card"
+                            type="button"
+                            data-chis-focus-search
+                            data-search-placeholder="Enter an ICD-10 code or diagnosis...">
+
+                            <span
+                                class="quick-action-icon"
+                                aria-hidden="true">
+                                🩺
+                            </span>
+
+                            <span class="quick-action-copy">
+
+                                <strong>
+                                    Search ICD-10
+                                </strong>
+
+                                <small>
+                                    Find diagnosis codes and case rates
+                                </small>
+
+                            </span>
+
+                            <span
+                                class="quick-action-arrow"
+                                aria-hidden="true">
+                                →
+                            </span>
+
+                        </button>
+
+                        <button
+                            class="quick-action-card"
+                            type="button"
+                            data-chis-focus-search
+                            data-search-placeholder="Enter an RVS code or procedure...">
+
+                            <span
+                                class="quick-action-icon"
+                                aria-hidden="true">
+                                🧾
+                            </span>
+
+                            <span class="quick-action-copy">
+
+                                <strong>
+                                    Search RVS
+                                </strong>
+
+                                <small>
+                                    Find procedures and package details
+                                </small>
+
+                            </span>
+
+                            <span
+                                class="quick-action-arrow"
+                                aria-hidden="true">
+                                →
+                            </span>
+
+                        </button>
+
+                        <button
+                            class="quick-action-card"
+                            type="button"
+                            data-chis-menu-target="menuFavorites">
+
+                            <span
+                                class="quick-action-icon"
+                                aria-hidden="true">
+                                ⭐
+                            </span>
+
+                            <span class="quick-action-copy">
+
+                                <strong>
+                                    View Favorites
+                                </strong>
+
+                                <small>
+                                    Open your saved codes
+                                </small>
+
+                            </span>
+
+                            <span
+                                class="quick-action-arrow"
+                                aria-hidden="true">
+                                →
+                            </span>
+
+                        </button>
+
+                        <button
+                            class="quick-action-card"
+                            type="button"
+                            data-chis-menu-target="menuHistory">
+
+                            <span
+                                class="quick-action-icon"
+                                aria-hidden="true">
+                                🕘
+                            </span>
+
+                            <span class="quick-action-copy">
+
+                                <strong>
+                                    Recent History
+                                </strong>
+
+                                <small>
+                                    Review previous searches
+                                </small>
+
+                            </span>
+
+                            <span
+                                class="quick-action-arrow"
+                                aria-hidden="true">
+                                →
+                            </span>
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+<!-- =========================================
+     EXISTING CHIS JAVASCRIPT
+========================================= -->
+<script>
+window.CHIS_TRANSMITTAL_MODULE_URL = <?!= transmittalModuleUrlJson ?>;
+</script>
+<?!= include("script"); ?>
+
+</body>
+</html>

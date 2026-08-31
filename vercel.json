@@ -1,24 +1,18 @@
 {
   "version": 2,
-  "name": "chis-coding-hub",
-  "builds": [
-    {
-      "src": "api/**/*.js",
-      "use": "@vercel/node"
-    }
-  ],
+  "cleanUrls": true,
   "routes": [
     {
-      "src": "/oauth/authorize",
-      "dest": "/api/oauth/authorize"
+      "src": "/api/proxy",
+      "dest": "/api/proxy.js"
     },
     {
-      "src": "/oauth/token",
-      "dest": "/api/oauth/token"
+      "src": "/transmittal",
+      "dest": "/public/transmittal.html"
     },
     {
-      "src": "/api/search",
-      "dest": "/api/search"
+      "src": "/(.*)",
+      "dest": "/public/$1"
     }
   ]
 }
