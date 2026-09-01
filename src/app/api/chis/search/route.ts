@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
         case_rate: Number(row.case_rate) || 0,
         hospital_fee: Number(row.hospital_fee) || 0,
         professional_fee: Number(row.professional_fee) || 0,
-        effectivity_date: row.effectivity_date || 'April 30, 2026 onwards',
+        effectivity_date: row.effectivity_date || null,
         type: recordType,
       });
     });
