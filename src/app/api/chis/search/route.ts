@@ -15,36 +15,28 @@ export async function GET(req: NextRequest) {
   if (!q) return NextResponse.json({ results: [] });
 
   const supabase = getSupabaseAdmin();
-  const isCodeQuery = /^[A-Z][0-9]/.test(q.toUpperCase()) || /^[A-Z][0-9]{2,}/.test(q.toUpperCase());
-
   const results: any[] = [];
 
   async function searchTable(table: 'icd10_db' | 'rvs_db', recordType: 'ICD' | 'RVS') {
     if (type !== 'ALL' && type !== recordType) return;
 
-    let query = supabase.from(table).select('*');
+    // Search both code and description using ilike for flexible partial matching
+    const query = supabase
+      .from(table)
+      .select('code, description, case_rate, hospital_fee, professional_fee')
+      .or(`code.ilike.%${q}%,description.ilike.%${q}%`)
+      .limit(limit);
 
-    if (isCodeQuery) {
-      // Exact or prefix match on code first
-      query = query.ilike('code', `${q.toUpperCase()}%`);
-    } else {
-      // Full-text keyword search on description
-      query = query.textSearch('description', q.split(/\s+/).join(' & '), {
-        type: 'websearch',
-        config: 'english',
-      });
-    }
-
-    const { data, error } = await query.limit(limit);
+    const { data, error } = await query;
     if (error || !data) return;
 
     data.forEach((row: any) => {
       results.push({
         code: row.code,
         description: row.description,
-        case_rate: row.case_rate,
-        hospital_fee: row.hospital_fee,
-        professional_fee: row.professional_fee,
+        case_rate: Number(row.case_rate) || 0,
+        hospital_fee: Number(row.hospital_fee) || 0,
+        professional_fee: Number(row.professional_fee) || 0,
         type: recordType,
       });
     });
@@ -55,11 +47,16 @@ export async function GET(req: NextRequest) {
     searchTable('rvs_db', 'RVS'),
   ]);
 
-  // Sort: exact code matches first
+  // Sort: exact code matches first, then prefix matches, then alphabetical
+  const qUpper = q.toUpperCase();
   results.sort((a, b) => {
-    const aExact = a.code.toUpperCase() === q.toUpperCase() ? -1 : 0;
-    const bExact = b.code.toUpperCase() === q.toUpperCase() ? -1 : 0;
-    return aExact - bExact;
+    const aCode = a.code.toUpperCase();
+    const bCode = b.code.toUpperCase();
+    if (aCode === qUpper) return -1;
+    if (bCode === qUpper) return 1;
+    if (aCode.startsWith(qUpper) && !bCode.startsWith(qUpper)) return -1;
+    if (!aCode.startsWith(qUpper) && bCode.startsWith(qUpper)) return 1;
+    return aCode.localeCompare(bCode);
   });
 
   // Log search to history (fire-and-forget)
