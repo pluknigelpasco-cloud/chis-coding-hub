@@ -499,8 +499,8 @@ export default function CHISLookupView() {
         {/* Search Tab Content */}
         {tab === 'SEARCH' && (
           <div>
-            {/* Search Input */}
-            <div className="p-3 sm:p-4 border-b border-slate-100 bg-slate-50/50">
+            {/* Search Input & Quick Dual Search Chips */}
+            <div className="p-3 sm:p-4 border-b border-slate-100 bg-slate-50/50 space-y-2.5">
               <div className="relative">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
@@ -508,7 +508,7 @@ export default function CHISLookupView() {
                   type="search"
                   value={query}
                   onChange={e => handleQueryChange(e.target.value)}
-                  placeholder="Search code (e.g. 11000, NSD01, N39.0), diagnosis, or procedure..."
+                  placeholder="Search single or dual codes (e.g. P03.4, 99460 or NSD01 + 99460)..."
                   className="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium shadow-xs"
                 />
                 {query && (
@@ -516,6 +516,29 @@ export default function CHISLookupView() {
                     <X className="w-4 h-4" />
                   </button>
                 )}
+              </div>
+
+              {/* Multi-Search Quick Chips */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">Dual Search:</span>
+                {[
+                  { label: 'P03.4 + 99460 (CS Newborn)', q: 'P03.4, 99460' },
+                  { label: 'NSD01 + 99460 (Delivery)', q: 'NSD01, 99460' },
+                  { label: '59514 + 99460 (CS + Newborn)', q: '59514, 99460' },
+                  { label: 'N39.0 + I10 (UTI & HTN)', q: 'N39.0, I10' },
+                ].map((chip, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      setQuery(chip.q);
+                      doSearch(chip.q);
+                    }}
+                    className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-white hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200 shadow-2xs transition-all cursor-pointer"
+                  >
+                    + {chip.label}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -526,6 +549,58 @@ export default function CHISLookupView() {
                   <div className="w-7 h-7 border-3 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
                   Searching database...
                 </div>
+              )}
+
+              {/* DUAL CASE RATE CLAIM ESTIMATOR BANNER (when 2+ codes are matched) */}
+              {!searching && results.length >= 2 && (
+                (() => {
+                  const r1 = results[0];
+                  const r2 = results[1];
+                  const r2Allowed = isSecondCaseRateAllowed(r2.code, r2.description);
+                  const r1Rate = r1.case_rate || 0;
+                  const r2Rate = r2Allowed ? (r2.case_rate || 0) : 0;
+                  const totalClaim = r1Rate + r2Rate;
+                  const totalHCI = (r1.hospital_fee || 0) + (r2Allowed ? (r2.hospital_fee || 0) : 0);
+                  const totalPF = (r1.professional_fee || 0) + (r2Allowed ? (r2.professional_fee || 0) : 0);
+
+                  return (
+                    <div className="mb-5 rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-4 sm:p-5 text-white shadow-lg border border-indigo-500/30 animate-fadeIn">
+                      <div className="flex flex-wrap items-center justify-between gap-2 mb-3 pb-2.5 border-b border-white/15">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-black uppercase tracking-wider">
+                            Dual Case Rate Claim Estimator
+                          </span>
+                          <span className="text-xs text-slate-300 font-semibold">
+                            Primary: <b>{r1.code}</b> + Secondary: <b>{r2.code}</b>
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-indigo-300 font-medium">Single Period of Confinement</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {/* Total Combined Claim */}
+                        <div className="bg-white/10 rounded-xl p-3 border border-white/15 backdrop-blur-xs flex flex-col justify-center">
+                          <p className="text-[10px] font-black uppercase tracking-wider text-emerald-400">Total Combined Reimbursement</p>
+                          <p className="text-2xl sm:text-3xl font-black text-white tracking-tight mt-0.5">{formatMoney(totalClaim)}</p>
+                        </div>
+
+                        {/* Combined Hospital Fee */}
+                        <div className="bg-white/5 rounded-xl p-3 border border-white/10 flex flex-col justify-center">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Combined Hospital (HCI)</p>
+                          <p className="text-lg sm:text-xl font-black text-slate-100 mt-0.5">{formatMoney(totalHCI)}</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5">{r1.code}: {formatMoney(r1.hospital_fee)} {r2Allowed ? `+ ${r2.code}: ${formatMoney(r2.hospital_fee)}` : '(2nd N/A)'}</p>
+                        </div>
+
+                        {/* Combined Professional Fee */}
+                        <div className="bg-white/5 rounded-xl p-3 border border-white/10 flex flex-col justify-center">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Combined Doctor (PF)</p>
+                          <p className="text-lg sm:text-xl font-black text-slate-100 mt-0.5">{formatMoney(totalPF)}</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5">{r1.code}: {formatMoney(r1.professional_fee)} {r2Allowed ? `+ ${r2.code}: ${formatMoney(r2.professional_fee)}` : '(2nd N/A)'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()
               )}
 
               {!searching && query && results.length === 0 && (
@@ -544,8 +619,8 @@ export default function CHISLookupView() {
               {!searching && !query && (
                 <div className="p-12 text-center text-slate-400 text-sm">
                   <Search className="w-12 h-12 mx-auto mb-3 opacity-25 text-slate-600" />
-                  <p className="font-bold text-slate-600">Enter a code, diagnosis, or procedure</p>
-                  <p className="text-xs text-slate-400 mt-1">Over 8,900+ validated ICD-10 and RVS case rates ready</p>
+                  <p className="font-bold text-slate-600">Enter one or two codes (e.g. P03.4, 99460)</p>
+                  <p className="text-xs text-slate-400 mt-1">Instant Dual Case Rate calculation and 8,900+ database records</p>
                 </div>
               )}
 
