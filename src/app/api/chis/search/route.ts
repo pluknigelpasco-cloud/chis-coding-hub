@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     // Search both code and description using ilike for flexible partial matching
     const query = supabase
       .from(table)
-      .select('code, description, case_rate, hospital_fee, professional_fee')
+      .select('*')
       .or(`code.ilike.%${q}%,description.ilike.%${q}%`)
       .limit(limit);
 
@@ -37,6 +37,7 @@ export async function GET(req: NextRequest) {
         case_rate: Number(row.case_rate) || 0,
         hospital_fee: Number(row.hospital_fee) || 0,
         professional_fee: Number(row.professional_fee) || 0,
+        effectivity_date: row.effectivity_date || 'April 30, 2026 onwards',
         type: recordType,
       });
     });

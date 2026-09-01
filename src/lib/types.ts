@@ -123,6 +123,7 @@ export interface CHISRecord {
   hospital_fee: number;
   professional_fee: number;
   type: 'ICD' | 'RVS';
+  effectivity_date?: string;
 }
 
 export interface Favorite {
@@ -134,6 +135,7 @@ export interface Favorite {
   case_rate: number;
   hospital_fee: number;
   professional_fee: number;
+  effectivity_date?: string;
   created_at: string;
 }
 
@@ -146,6 +148,7 @@ export interface SearchHistoryItem {
   case_rate?: number;
   hospital_fee?: number;
   professional_fee?: number;
+  effectivity_date?: string;
   created_at: string;
 }
 
@@ -158,6 +161,7 @@ export interface AICodingCandidate {
   confidence: 'HIGH' | 'MEDIUM' | 'LOW';
   score: number;
   note?: string;
+  effectivityDate?: string;
 }
 
 export interface AICodingResult {

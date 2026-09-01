@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, Star, StarOff, Clock, Trash2, X } from 'lucide-react';
+import { Search, Star, StarOff, Clock, Trash2, X, Calendar, ExternalLink } from 'lucide-react';
 import { CHISRecord, Favorite } from '@/lib/types';
 
 type TabKey = 'SEARCH' | 'FAVORITES' | 'HISTORY';
@@ -38,12 +38,26 @@ function ResultRow({
           <TypeBadge type={record.type} />
           <span className="font-mono font-black text-sm text-slate-800">{record.code}</span>
         </div>
+        <div className="mt-1.5 flex items-center gap-1.5 text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md w-fit">
+          <Calendar className="w-3 h-3 text-blue-600 shrink-0" />
+          <span className="text-slate-700 font-semibold">{record.effectivity_date || 'April 30, 2026 onwards'}</span>
+        </div>
       </td>
-      <td className="px-4 py-3 text-sm text-slate-700 leading-snug">{record.description}</td>
-      <td className="px-4 py-3 text-right text-sm font-semibold text-slate-700 whitespace-nowrap">{formatMoney(record.case_rate)}</td>
-      <td className="px-4 py-3 text-right text-sm text-slate-600 whitespace-nowrap">{formatMoney(record.hospital_fee)}</td>
-      <td className="px-4 py-3 text-right text-sm text-slate-600 whitespace-nowrap">{formatMoney(record.professional_fee)}</td>
-      <td className="px-4 py-3 text-center">
+      <td className="px-4 py-3 text-sm text-slate-700 leading-snug align-top">
+        <p className="font-medium text-slate-800 mb-1">{record.description}</p>
+        <a
+          href={`https://www.philhealth.gov.ph/services/acr/`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-[11px] text-blue-600 hover:text-blue-800 hover:underline font-semibold"
+        >
+          Verify with PhilHealth ACR <ExternalLink className="w-3 h-3" />
+        </a>
+      </td>
+      <td className="px-4 py-3 text-right text-sm font-bold text-slate-800 whitespace-nowrap align-top">{formatMoney(record.case_rate)}</td>
+      <td className="px-4 py-3 text-right text-sm text-slate-600 whitespace-nowrap align-top">{formatMoney(record.hospital_fee)}</td>
+      <td className="px-4 py-3 text-right text-sm text-slate-600 whitespace-nowrap align-top">{formatMoney(record.professional_fee)}</td>
+      <td className="px-4 py-3 text-center align-top">
         <button
           onClick={() => onToggleFav(record)}
           title={isFav ? 'Remove from favorites' : 'Add to favorites'}
@@ -107,7 +121,7 @@ export default function CHISLookupView() {
   function handleQueryChange(val: string) {
     setQuery(val);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => doSearch(val), 350);
+    debounceRef.current = setTimeout(() => doSearch(val), 300);
   }
 
   async function toggleFav(record: CHISRecord) {
@@ -139,9 +153,20 @@ export default function CHISLookupView() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-700 to-blue-500 rounded-2xl p-6 text-white shadow-lg">
-        <h2 className="text-2xl font-black tracking-tight mb-1">CHIS Coding Search</h2>
-        <p className="text-blue-100 text-sm">Search ICD-10 codes, RVS procedures, PhilHealth case rates, and professional fees.</p>
+      <div className="bg-gradient-to-r from-blue-700 to-blue-500 rounded-2xl p-6 text-white shadow-lg flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-black tracking-tight mb-1">CHIS Coding Search</h2>
+          <p className="text-blue-100 text-sm">Search ICD-10 codes, RVS procedures, PhilHealth case rates, and effectivity dates.</p>
+        </div>
+        <a
+          href="https://www.philhealth.gov.ph/services/acr/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-xl text-xs font-bold transition-all border border-white/30 w-fit shrink-0 backdrop-blur-sm"
+        >
+          <span>Official PhilHealth ACR</span>
+          <ExternalLink className="w-3.5 h-3.5" />
+        </a>
       </div>
 
       {/* Tabs */}
@@ -189,7 +214,7 @@ export default function CHISLookupView() {
               {searching && (
                 <div className="p-12 text-center text-slate-400 text-sm">
                   <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                  Searching...
+                  Searching local database...
                 </div>
               )}
               {!searching && query && results.length === 0 && (
@@ -205,7 +230,7 @@ export default function CHISLookupView() {
                 <table className="w-full text-left border-collapse min-w-[800px]">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-100">
-                      <th className="px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-wider w-32">Type / Code</th>
+                      <th className="px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-wider w-48">Type / Code & Effectivity</th>
                       <th className="px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-wider">Description</th>
                       <th className="px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-wider text-right whitespace-nowrap">Case Rate</th>
                       <th className="px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-wider text-right whitespace-nowrap">Hospital Fee</th>
@@ -236,7 +261,7 @@ export default function CHISLookupView() {
               <table className="w-full text-left border-collapse min-w-[800px]">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-100">
-                    <th className="px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-wider w-32">Type / Code</th>
+                    <th className="px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-wider w-48">Type / Code & Effectivity</th>
                     <th className="px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-wider">Description</th>
                     <th className="px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-wider text-right">Case Rate</th>
                     <th className="px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-wider text-right">Hospital Fee</th>
@@ -248,7 +273,15 @@ export default function CHISLookupView() {
                   {favorites.map(f => (
                     <ResultRow
                       key={f.id}
-                      record={{ code: f.code, description: f.description, case_rate: f.case_rate, hospital_fee: f.hospital_fee, professional_fee: f.professional_fee, type: f.type }}
+                      record={{
+                        code: f.code,
+                        description: f.description,
+                        case_rate: f.case_rate,
+                        hospital_fee: f.hospital_fee,
+                        professional_fee: f.professional_fee,
+                        type: f.type,
+                        effectivity_date: f.effectivity_date || 'April 30, 2026 onwards',
+                      }}
                       isFav={true}
                       onToggleFav={r => toggleFav(r)}
                     />
