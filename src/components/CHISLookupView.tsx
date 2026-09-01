@@ -46,8 +46,16 @@ function TypeBadge({ type }: { type: string }) {
   );
 }
 
-// Comprehensive PhilHealth Non-Secondary Case Rate Rules
-function isSecondCaseRateAllowed(code: string, description: string): boolean {
+// Strict PhilHealth Second Case Rate Eligibility Rules:
+// Under PhilHealth ACR Policy (Circular 0035, s. 2013):
+// 1. ALL ICD-10 (Medical diagnoses) are STRICTLY NOT APPLICABLE as a Second Case Rate!
+// 2. Only Surgical Procedures (RVS codes) can be claimed as a 2nd Case Rate, EXCEPT excluded primary-only packages (Cesarean, NSD, Newborn, Dialysis, Chemo, etc.).
+function isSecondCaseRateAllowed(type: string, code: string, description: string): boolean {
+  // Medical diagnoses (ICD-10) are NEVER allowed as 2nd Case Rate!
+  if (type === 'ICD' || !/^\d{4,5}$/.test(String(code || '').trim())) {
+    return false;
+  }
+
   const c = String(code || '').toUpperCase().trim();
   const d = String(description || '').toUpperCase();
 
@@ -91,7 +99,7 @@ function ResultCard({
   onToggleFav: (r: CHISRecord) => void;
   onOpenCRS: (code: string) => void;
 }) {
-  const secondApplicable = isSecondCaseRateAllowed(record.code, record.description);
+  const secondApplicable = isSecondCaseRateAllowed(record.type, record.code, record.description);
   const secondRate = secondApplicable ? record.case_rate : 0;
   const secondHCI = secondApplicable ? record.hospital_fee : 0;
   const secondPF = secondApplicable ? record.professional_fee : 0;
@@ -245,7 +253,7 @@ function ResultTableRow({
   onToggleFav: (r: CHISRecord) => void;
   onOpenCRS: (code: string) => void;
 }) {
-  const secondApplicable = isSecondCaseRateAllowed(record.code, record.description);
+  const secondApplicable = isSecondCaseRateAllowed(record.type, record.code, record.description);
 
   return (
     <tr className="hover:bg-slate-50/80 group transition-colors">
