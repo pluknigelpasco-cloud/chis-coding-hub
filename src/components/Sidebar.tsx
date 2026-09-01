@@ -75,8 +75,8 @@ export default function Sidebar({
               </div>
               {!isCollapsed && (
                 <div className="min-w-0 transition-opacity duration-200">
-                  <h1 className="font-black text-sm leading-tight tracking-tight truncate text-white">Transmittal Monitor</h1>
-                  <p className="text-[10px] text-blue-200 truncate font-medium">{HOSPITAL_NAME}</p>
+                  <h1 className="font-black text-sm leading-tight tracking-tight truncate text-white">CPH-B HealthLink Hub</h1>
+                  <p className="text-[10px] text-blue-200 truncate font-medium">Transmittal & CHIS Suite</p>
                 </div>
               )}
             </div>

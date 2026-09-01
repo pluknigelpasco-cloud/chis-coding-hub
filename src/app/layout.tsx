@@ -4,8 +4,8 @@ import { ToastProvider } from '@/components/Toast';
 import { ThemeProvider } from '@/lib/theme';
 
 export const metadata: Metadata = {
-  title: 'CHIS Coding Hub & Transmittal Monitor | CPH-Balamban',
-  description: 'PhilHealth ICD-10 & RVS Coding Search, Live CRS Sync, and Transmittal Deadline Monitor',
+  title: 'CPH-B HealthLink Hub | Transmittal & CHIS Coding Suite',
+  description: 'Cebu Provincial Hospital - Balamban Transmittal Monitoring, RTH/Denied Tracking & PhilHealth CHIS ICD-10/RVS Coding Suite',
   icons: {
     icon: '/app_icon.jpg',
     apple: '/app_icon.jpg',

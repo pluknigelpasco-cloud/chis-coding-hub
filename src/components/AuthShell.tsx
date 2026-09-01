@@ -321,7 +321,7 @@ export default function AuthShell({ onLoginSuccess }: AuthShellProps) {
               ) : (
                 <>
                   <CheckCircle2 className="w-4 h-4" />
-                  Sign In to Transmittal Monitor
+                  Sign In to HealthLink Hub
                 </>
               )}
             </button>
