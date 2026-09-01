@@ -1,17 +1,17 @@
 'use client';
 import React, { useState } from 'react';
-import { Sparkles, AlertTriangle, CheckCircle2, HelpCircle, Loader2 } from 'lucide-react';
+import { Sparkles, AlertTriangle, CheckCircle2, HelpCircle, Loader2, Building2, User, FileText, ArrowRight } from 'lucide-react';
 import { AICodingResult, AICodingCandidate } from '@/lib/types';
 
 function ConfidencePill({ confidence }: { confidence: string }) {
   const styles: Record<string, string> = {
-    HIGH: 'bg-emerald-100 text-emerald-700',
-    MEDIUM: 'bg-amber-100 text-amber-700',
-    LOW: 'bg-red-100 text-red-700',
+    HIGH: 'bg-emerald-100 text-emerald-800 border border-emerald-300/80',
+    MEDIUM: 'bg-amber-100 text-amber-800 border border-amber-300/80',
+    LOW: 'bg-red-100 text-red-800 border border-red-300/80',
   };
   return (
-    <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide ${styles[confidence] || 'bg-slate-100 text-slate-600'}`}>
-      {confidence}
+    <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${styles[confidence] || 'bg-slate-100 text-slate-700'}`}>
+      {confidence} MATCH
     </span>
   );
 }
@@ -23,29 +23,47 @@ function formatMoney(val: number) {
 
 function CandidateCard({ candidate, index }: { candidate: AICodingCandidate; index: number }) {
   return (
-    <div className={`rounded-xl p-4 border ${
-      index === 0 ? 'border-blue-200 bg-blue-50' : 'border-slate-100 bg-white'
+    <div className={`rounded-2xl p-4 sm:p-5 border transition-all ${
+      index === 0
+        ? 'border-indigo-200 bg-gradient-to-br from-indigo-50/80 to-blue-50/40 shadow-xs ring-1 ring-indigo-500/10'
+        : 'border-slate-200 bg-white hover:bg-slate-50/50'
     }`}>
-      <div className="flex items-start justify-between gap-3 mb-2">
-        <div>
-          <span className="font-mono font-black text-base text-slate-800 mr-2">{candidate.code}</span>
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+        <div className="flex items-center gap-2">
+          <span className="font-mono font-black text-lg sm:text-xl text-slate-900">{candidate.code}</span>
           <ConfidencePill confidence={candidate.confidence} />
         </div>
-        {index === 0 && <span className="text-[10px] font-black text-blue-500 uppercase tracking-wider">Best Match</span>}
+        {index === 0 && (
+          <span className="text-[10px] font-black text-indigo-700 bg-indigo-100 border border-indigo-200 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+            ★ Top Recommendation
+          </span>
+        )}
       </div>
-      <p className="text-sm text-slate-600 mb-3 leading-snug">{candidate.description}</p>
+
+      <p className="text-sm font-semibold text-slate-800 mb-3.5 leading-relaxed">{candidate.description}</p>
+
+      {candidate.note && (
+        <div className="mb-3 text-xs bg-white/80 border border-slate-200/80 rounded-xl p-2.5 text-slate-600 font-medium">
+          💡 <span className="font-bold text-slate-700">Coding Rule:</span> {candidate.note}
+        </div>
+      )}
+
       <div className="grid grid-cols-3 gap-2 text-center">
-        <div className="bg-white rounded-lg border border-slate-100 p-2">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-0.5">Case Rate</p>
-          <p className="text-sm font-black text-slate-800">{formatMoney(candidate.caseRate)}</p>
+        <div className="bg-emerald-50/90 rounded-xl border border-emerald-200/80 p-2.5 flex flex-col justify-center">
+          <p className="text-[10px] font-black text-emerald-800 uppercase tracking-wider mb-0.5">Case Rate</p>
+          <p className="text-sm sm:text-base font-black text-emerald-700">{formatMoney(candidate.caseRate)}</p>
         </div>
-        <div className="bg-white rounded-lg border border-slate-100 p-2">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-0.5">Hospital</p>
-          <p className="text-sm font-black text-slate-700">{formatMoney(candidate.hospitalFee)}</p>
+        <div className="bg-white rounded-xl border border-slate-200/80 p-2 flex flex-col justify-center">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 flex items-center justify-center gap-1">
+            <Building2 className="w-2.5 h-2.5 text-slate-400" /> Hospital
+          </p>
+          <p className="text-xs sm:text-sm font-bold text-slate-800">{formatMoney(candidate.hospitalFee)}</p>
         </div>
-        <div className="bg-white rounded-lg border border-slate-100 p-2">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-0.5">Prof. Fee</p>
-          <p className="text-sm font-black text-slate-700">{formatMoney(candidate.professionalFee)}</p>
+        <div className="bg-white rounded-xl border border-slate-200/80 p-2 flex flex-col justify-center">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 flex items-center justify-center gap-1">
+            <User className="w-2.5 h-2.5 text-slate-400" /> Doctor PF
+          </p>
+          <p className="text-xs sm:text-sm font-bold text-slate-800">{formatMoney(candidate.professionalFee)}</p>
         </div>
       </div>
     </div>
@@ -58,6 +76,14 @@ export default function AICodingView() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AICodingResult | null>(null);
   const [error, setError] = useState('');
+
+  const quickSamples = [
+    'Urinary Tract Infection',
+    'Essential Hypertension',
+    'Community Acquired Pneumonia, Moderate Risk',
+    'Type 2 Diabetes Mellitus with Renal Complications secondary to Hypertension',
+    'Acute Appendicitis',
+  ];
 
   async function handleAnalyze() {
     if (!diagnosisText.trim()) return;
@@ -82,39 +108,62 @@ export default function AICodingView() {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-violet-700 to-indigo-600 rounded-2xl p-6 text-white shadow-lg">
-        <div className="flex items-center gap-3 mb-2">
-          <Sparkles className="w-6 h-6" />
-          <h2 className="text-2xl font-black tracking-tight">AI Coding Assistant</h2>
+      {/* Header Banner */}
+      <div className="bg-gradient-to-r from-violet-700 via-indigo-700 to-purple-800 rounded-2xl p-5 sm:p-6 text-white shadow-md">
+        <div className="flex items-center gap-2.5 mb-1.5">
+          <div className="p-1.5 bg-white/20 rounded-xl backdrop-blur-xs">
+            <Sparkles className="w-5 h-5 text-amber-300" />
+          </div>
+          <h2 className="text-xl sm:text-2xl font-black tracking-tight">AI Coding Assistant</h2>
         </div>
-        <p className="text-violet-200 text-sm">
-          Paste or type the doctor's final diagnosis statement. The AI suggests ICD-10 codes and PhilHealth case rates from your CHIS database.
+        <p className="text-violet-100 text-xs sm:text-sm">
+          Paste or type the doctor's final diagnosis statement. The AI identifies principal & secondary conditions and suggests ICD-10 codes with PhilHealth case rates.
         </p>
       </div>
 
-      {/* Input */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-4">
+      {/* Input Card */}
+      <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-4 sm:p-5 space-y-4">
         <div>
-          <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2">
-            Final Diagnosis (one per line)
-          </label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-xs font-black text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+              <FileText className="w-3.5 h-3.5 text-slate-400" />
+              Final Diagnosis (One per line)
+            </label>
+          </div>
           <textarea
             value={diagnosisText}
             onChange={e => setDiagnosisText(e.target.value)}
-            rows={5}
-            placeholder={'1. Type 2 Diabetes Mellitus\n2. Hypertensive Heart Disease\n3. Community Acquired Pneumonia, Moderate Risk'}
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 resize-y font-mono"
+            rows={4}
+            placeholder={'1. Urinary Tract Infection\n2. Hypertensive Heart Disease\n3. Community Acquired Pneumonia, Moderate Risk'}
+            className="w-full rounded-xl border border-slate-200 bg-slate-50/50 p-3 sm:p-4 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 resize-y font-mono font-medium shadow-xs"
           />
         </div>
 
-        <div className="flex items-end gap-4">
-          <div>
-            <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2">Facility Type</label>
+        {/* Quick Sample Diagnosis Chips */}
+        <div>
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Quick Sample Prompts:</p>
+          <div className="flex flex-wrap gap-1.5">
+            {quickSamples.map((s, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => setDiagnosisText(s)}
+                className="text-[11px] font-bold px-2.5 py-1 bg-slate-100 hover:bg-violet-100 hover:text-violet-800 text-slate-700 rounded-lg transition-colors border border-slate-200/60"
+              >
+                + {s}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Controls */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-slate-100">
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">Facility:</label>
             <select
               value={facilityType}
               onChange={e => setFacilityType(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-500"
+              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs sm:text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-500"
             >
               <option value="level1">Level 1 (RHU / Infirmary)</option>
               <option value="level2">Level 2 (District / Provincial)</option>
@@ -125,86 +174,72 @@ export default function AICodingView() {
           <button
             onClick={handleAnalyze}
             disabled={loading || !diagnosisText.trim()}
-            className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-black text-sm shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-xl font-black text-sm shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            {loading ? 'Analyzing...' : 'Analyze Diagnoses'}
+            {loading ? 'Analyzing Diagnoses...' : 'Analyze Diagnoses'}
           </button>
         </div>
 
         {error && (
-          <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
-            <AlertTriangle className="w-4 h-4 shrink-0" />
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold">
+            <AlertTriangle className="w-4 h-4 shrink-0 text-red-500" />
             {error}
           </div>
         )}
       </div>
 
-      {/* Disclaimer */}
+      {/* Official Disclaimer */}
       {result && (
-        <div className="flex items-start gap-2 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-xs leading-relaxed">
-          <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+        <div className="flex items-start gap-2.5 p-3.5 sm:p-4 rounded-2xl bg-amber-50/80 border border-amber-200 text-amber-900 text-xs leading-relaxed">
+          <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
           <span>{result.disclaimer}</span>
         </div>
       )}
 
-      {/* Combinations */}
+      {/* Causal Combinations Detected */}
       {result && result.combinations.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-          <h3 className="font-black text-slate-800 text-base mb-3 flex items-center gap-2">
-            <HelpCircle className="w-5 h-5 text-amber-500" />
-            Causal Relationships Detected
+        <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-4 sm:p-5">
+          <h3 className="font-black text-slate-800 text-sm sm:text-base mb-3 flex items-center gap-2">
+            <HelpCircle className="w-4 h-4 text-amber-500" />
+            Causal / Combination Relationships Detected
           </h3>
           <div className="space-y-3">
             {result.combinations.map((c, i) => (
-              <div key={i} className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-sm">
-                <p className="font-bold text-slate-700 mb-1">"{c.originalStatement}"</p>
-                <p className="text-amber-700 mb-2"><b>Connector:</b> {c.relation} — {c.sequencingNote}</p>
-                <p className="text-slate-500 text-xs">{c.claimRule}</p>
+              <div key={i} className="p-3.5 rounded-xl bg-amber-50/60 border border-amber-200 text-xs leading-relaxed">
+                <p className="font-black text-slate-800 text-sm mb-1">"{c.originalStatement}"</p>
+                <p className="text-amber-800 font-semibold mb-1.5"><b>Connector:</b> {c.relation} — {c.sequencingNote}</p>
+                <p className="text-slate-500">{c.claimRule}</p>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Results */}
+      {/* Diagnostic Candidate Results */}
       {result && result.results.map((r, i) => (
-        <div key={i} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-          <div className="flex items-start justify-between gap-4 mb-4">
+        <div key={i} className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-4 sm:p-5">
+          <div className="flex items-start justify-between gap-3 mb-3.5 pb-3 border-b border-slate-100">
             <div>
-              <p className="text-xs font-black text-slate-400 uppercase tracking-wider mb-1">{r.diagnosisType}</p>
-              <h3 className="font-black text-slate-800 text-base leading-snug">{r.diagnosis}</h3>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-0.5">{r.diagnosisType}</p>
+              <h3 className="font-black text-slate-900 text-base sm:text-lg leading-snug">{r.diagnosis}</h3>
             </div>
             <div>
-              {r.status === 'CANDIDATES_FOUND' && <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
-              {r.status === 'NO_RELIABLE_MATCH' && <AlertTriangle className="w-5 h-5 text-red-400" />}
-              {r.status === 'NEEDS_CLARIFICATION' && <HelpCircle className="w-5 h-5 text-amber-400" />}
+              {r.status === 'CANDIDATES_FOUND' && <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />}
+              {r.status === 'NO_RELIABLE_MATCH' && <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />}
+              {r.status === 'NEEDS_CLARIFICATION' && <HelpCircle className="w-5 h-5 text-amber-400 shrink-0" />}
             </div>
           </div>
 
           {r.message && (
-            <p className="text-sm text-slate-500 italic">{r.message}</p>
+            <p className="text-xs font-semibold text-slate-500 italic p-3 bg-slate-50 rounded-xl">{r.message}</p>
           )}
 
           {r.candidates.length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {r.candidates.map((c, ci) => (
                 <CandidateCard key={ci} candidate={c} index={ci} />
               ))}
-            </div>
-          )}
-
-          {r.codingQuestions && r.codingQuestions.length > 0 && (
-            <div className="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <p className="text-xs font-black text-slate-500 uppercase tracking-wider mb-2">Clarifying Questions</p>
-              <ul className="space-y-1">
-                {r.codingQuestions.map((q, qi) => (
-                  <li key={qi} className="text-sm text-slate-600 flex items-start gap-2">
-                    <HelpCircle className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-                    {q}
-                  </li>
-                ))}
-              </ul>
             </div>
           )}
         </div>

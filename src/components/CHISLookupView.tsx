@@ -1,6 +1,10 @@
 'use client';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, Star, StarOff, Clock, Trash2, X, Calendar, ExternalLink, Activity, CheckCircle2, ShieldCheck, RefreshCw, Layers } from 'lucide-react';
+import {
+  Search, Star, StarOff, Clock, Trash2, X, Calendar, ExternalLink,
+  Activity, CheckCircle2, ShieldCheck, Layers, LayoutGrid, Table as TableIcon,
+  Sparkles, ArrowRight, Building2, User
+} from 'lucide-react';
 import { CHISRecord, Favorite } from '@/lib/types';
 
 type TabKey = 'SEARCH' | 'FAVORITES' | 'HISTORY';
@@ -32,17 +36,18 @@ function formatMoney(val: number): string {
 
 function TypeBadge({ type }: { type: string }) {
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black tracking-wider ${
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-black tracking-wider shadow-xs ${
       type === 'ICD'
-        ? 'bg-blue-100 text-blue-700'
-        : 'bg-emerald-100 text-emerald-700'
+        ? 'bg-blue-100 text-blue-800 border border-blue-200'
+        : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
     }`}>
       {type}
     </span>
   );
 }
 
-function ResultRow({
+// Card View component for responsive mobile & modern grid
+function ResultCard({
   record,
   isFav,
   onToggleFav,
@@ -54,23 +59,112 @@ function ResultRow({
   onOpenCRS: (code: string) => void;
 }) {
   return (
-    <tr className="hover:bg-slate-50 group">
-      <td className="px-4 py-3 align-top">
+    <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group">
+      <div>
+        {/* Card Header: Type, Code, Favorite */}
+        <div className="flex items-start justify-between gap-3 mb-2.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <TypeBadge type={record.type} />
+            <span className="font-mono font-black text-lg text-slate-900 tracking-tight">{record.code}</span>
+            <div className="flex items-center gap-1 text-[11px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
+              <Calendar className="w-3 h-3 text-blue-600 shrink-0" />
+              <span>{record.effectivity_date || 'PhilHealth ACR / CRS'}</span>
+            </div>
+          </div>
+          <button
+            onClick={() => onToggleFav(record)}
+            title={isFav ? 'Remove from favorites' : 'Add to favorites'}
+            className={`p-2 rounded-xl transition-all ${
+              isFav
+                ? 'text-amber-500 bg-amber-50 hover:bg-amber-100'
+                : 'text-slate-300 hover:text-amber-400 hover:bg-amber-50'
+            }`}
+          >
+            {isFav ? <Star className="w-5 h-5 fill-current" /> : <StarOff className="w-5 h-5" />}
+          </button>
+        </div>
+
+        {/* Description */}
+        <p className="text-sm font-semibold text-slate-800 leading-relaxed mb-4">
+          {record.description}
+        </p>
+      </div>
+
+      <div>
+        {/* Case Rate Breakdown Grid */}
+        <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-100 mb-3.5 text-center">
+          <div className="bg-emerald-50/80 border border-emerald-200/60 rounded-lg p-2 flex flex-col justify-center">
+            <p className="text-[10px] font-black text-emerald-800 uppercase tracking-wider mb-0.5">Case Rate</p>
+            <p className="text-sm sm:text-base font-black text-emerald-700">{formatMoney(record.case_rate)}</p>
+          </div>
+          <div className="bg-white border border-slate-200/60 rounded-lg p-2 flex flex-col justify-center">
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 flex items-center justify-center gap-1">
+              <Building2 className="w-2.5 h-2.5 text-slate-400" /> HCI
+            </p>
+            <p className="text-xs sm:text-sm font-bold text-slate-700">{formatMoney(record.hospital_fee)}</p>
+          </div>
+          <div className="bg-white border border-slate-200/60 rounded-lg p-2 flex flex-col justify-center">
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 flex items-center justify-center gap-1">
+              <User className="w-2.5 h-2.5 text-slate-400" /> Prof Fee
+            </p>
+            <p className="text-xs sm:text-sm font-bold text-slate-700">{formatMoney(record.professional_fee)}</p>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+          <button
+            onClick={() => onOpenCRS(record.code)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold transition-colors"
+          >
+            <Activity className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Live CRS Timeline</span>
+          </button>
+          <a
+            href="https://www.philhealth.gov.ph/services/acr/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-blue-600 font-semibold"
+          >
+            <span>PhilHealth Portal</span>
+            <ExternalLink className="w-3 h-3" />
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Table Row for Desktop Table View
+function ResultTableRow({
+  record,
+  isFav,
+  onToggleFav,
+  onOpenCRS,
+}: {
+  record: CHISRecord;
+  isFav: boolean;
+  onToggleFav: (r: CHISRecord) => void;
+  onOpenCRS: (code: string) => void;
+}) {
+  return (
+    <tr className="hover:bg-slate-50/80 group transition-colors">
+      <td className="px-4 py-3.5 align-top w-44">
         <div className="flex items-center gap-2">
           <TypeBadge type={record.type} />
-          <span className="font-mono font-black text-sm text-slate-800">{record.code}</span>
+          <span className="font-mono font-black text-base text-slate-900">{record.code}</span>
         </div>
-        <div className="mt-1.5 flex items-center gap-1.5 text-[11px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md w-fit">
+        <div className="mt-1 flex items-center gap-1 text-[11px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded w-fit">
           <Calendar className="w-3 h-3 text-blue-600 shrink-0" />
           <span>{record.effectivity_date || 'PhilHealth ACR / CRS'}</span>
         </div>
       </td>
-      <td className="px-4 py-3 text-sm text-slate-700 leading-snug align-top">
-        <p className="font-medium text-slate-800 mb-1.5">{record.description}</p>
+      <td className="px-4 py-3.5 text-sm text-slate-700 leading-snug align-top">
+        <p className="font-semibold text-slate-800 mb-1.5">{record.description}</p>
         <div className="flex items-center gap-3">
           <button
             onClick={() => onOpenCRS(record.code)}
-            className="inline-flex items-center gap-1.5 text-[11px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded-md transition-colors"
+            className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded transition-colors"
           >
             <Activity className="w-3 h-3 text-indigo-500" />
             <span>Live CRS Timeline</span>
@@ -86,10 +180,14 @@ function ResultRow({
           </a>
         </div>
       </td>
-      <td className="px-4 py-3 text-right text-sm font-black text-slate-900 whitespace-nowrap align-top">{formatMoney(record.case_rate)}</td>
-      <td className="px-4 py-3 text-right text-sm text-slate-600 whitespace-nowrap align-top">{formatMoney(record.hospital_fee)}</td>
-      <td className="px-4 py-3 text-right text-sm text-slate-600 whitespace-nowrap align-top">{formatMoney(record.professional_fee)}</td>
-      <td className="px-4 py-3 text-center align-top">
+      <td className="px-4 py-3.5 text-right align-top whitespace-nowrap">
+        <span className="inline-block px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 font-black text-sm border border-emerald-200/60">
+          {formatMoney(record.case_rate)}
+        </span>
+      </td>
+      <td className="px-4 py-3.5 text-right text-sm font-semibold text-slate-600 whitespace-nowrap align-top">{formatMoney(record.hospital_fee)}</td>
+      <td className="px-4 py-3.5 text-right text-sm font-semibold text-slate-600 whitespace-nowrap align-top">{formatMoney(record.professional_fee)}</td>
+      <td className="px-4 py-3.5 text-center align-top w-12">
         <button
           onClick={() => onToggleFav(record)}
           title={isFav ? 'Remove from favorites' : 'Add to favorites'}
@@ -108,6 +206,7 @@ function ResultRow({
 
 export default function CHISLookupView() {
   const [tab, setTab] = useState<TabKey>('SEARCH');
+  const [viewMode, setViewMode] = useState<'CARD' | 'TABLE'>('CARD');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<CHISRecord[]>([]);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
@@ -158,7 +257,7 @@ export default function CHISLookupView() {
   function handleQueryChange(val: string) {
     setQuery(val);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => doSearch(val), 300);
+    debounceRef.current = setTimeout(() => doSearch(val), 250);
   }
 
   async function openLiveCRS(code: string) {
@@ -206,188 +305,235 @@ export default function CHISLookupView() {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-600 rounded-2xl p-6 text-white shadow-lg flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      {/* Header Banner */}
+      <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-600 rounded-2xl p-5 sm:p-6 text-white shadow-md flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black tracking-tight mb-1">CHIS Coding Search & CRS Sync</h2>
-          <p className="text-blue-100 text-sm">Search ICD-10 codes, RVS procedures, PhilHealth case rates, and live CRS timelines.</p>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="bg-white/20 text-white text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider backdrop-blur-xs">
+              ICD-10 & RVS Engine
+            </span>
+          </div>
+          <h2 className="text-xl sm:text-2xl font-black tracking-tight">CHIS Coding Search & CRS Sync</h2>
+          <p className="text-blue-100 text-xs sm:text-sm mt-0.5">Search ICD-10 codes, RVS procedures, PhilHealth case rates, and live timelines.</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <a
             href="https://crs.philhealth.gov.ph/"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-xl text-xs font-bold transition-all border border-white/30 w-fit backdrop-blur-sm"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white/15 hover:bg-white/25 text-white rounded-xl text-xs font-bold transition-all border border-white/20 backdrop-blur-xs shadow-xs"
           >
-            <span>Live PhilHealth CRS Portal</span>
-            <ExternalLink className="w-3.5 h-3.5" />
+            <span>Live PhilHealth CRS</span>
+            <ExternalLink className="w-3 h-3" />
           </a>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200">
-        <div className="flex border-b border-slate-100">
-          {tabs.map(t => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={`flex items-center gap-2 px-5 py-3 text-sm font-bold transition-all border-b-2 ${
-                tab === t.key
-                  ? 'border-blue-600 text-blue-700 bg-blue-50/60'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-              }`}
-            >
-              {t.icon}
-              {t.label}
-            </button>
-          ))}
+      {/* Main Container */}
+      <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 overflow-hidden">
+        {/* Navigation Tabs & View Mode Toggle */}
+        <div className="flex flex-wrap items-center justify-between border-b border-slate-100 px-3 sm:px-4">
+          <div className="flex">
+            {tabs.map(t => (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={`flex items-center gap-2 px-3 sm:px-5 py-3 text-xs sm:text-sm font-black transition-all border-b-2 ${
+                  tab === t.key
+                    ? 'border-blue-600 text-blue-700 bg-blue-50/50'
+                    : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+                }`}
+              >
+                {t.icon}
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Toggle Card vs Table View */}
+          {tab !== 'HISTORY' && (
+            <div className="hidden sm:flex items-center gap-1 bg-slate-100 p-1 rounded-xl my-2">
+              <button
+                onClick={() => setViewMode('CARD')}
+                title="Card Grid View"
+                className={`p-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${
+                  viewMode === 'CARD' ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">Cards</span>
+              </button>
+              <button
+                onClick={() => setViewMode('TABLE')}
+                title="Compact Table View"
+                className={`p-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${
+                  viewMode === 'TABLE' ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <TableIcon className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">Table</span>
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Search Tab */}
+        {/* Search Tab Content */}
         {tab === 'SEARCH' && (
           <div>
-            <div className="p-4 border-b border-slate-100">
+            {/* Search Input */}
+            <div className="p-3 sm:p-4 border-b border-slate-100 bg-slate-50/50">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   autoFocus
                   type="search"
                   value={query}
                   onChange={e => handleQueryChange(e.target.value)}
-                  placeholder="Search ICD-10, RVS (e.g. 99460), diagnosis, or procedure..."
-                  className="w-full pl-9 pr-10 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium"
+                  placeholder="Search code (e.g. NSD01, N39.0), diagnosis, or procedure..."
+                  className="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium shadow-xs"
                 />
                 {query && (
-                  <button onClick={() => { setQuery(''); setResults([]); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                  <button onClick={() => { setQuery(''); setResults([]); }} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
                     <X className="w-4 h-4" />
                   </button>
                 )}
               </div>
             </div>
 
-            <div className="overflow-x-auto">
+            {/* Results Area */}
+            <div className="p-3 sm:p-5">
               {searching && (
                 <div className="p-12 text-center text-slate-400 text-sm">
-                  <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                  <div className="w-7 h-7 border-3 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
                   Searching database...
                 </div>
               )}
+
               {!searching && query && results.length === 0 && (
-                <div className="p-12 text-center text-slate-400 text-sm">
-                  <p className="mb-3">No local results found for <b>"{query}"</b>.</p>
+                <div className="p-10 text-center text-slate-500 text-sm bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                  <p className="font-semibold text-slate-700 mb-3">No local records found for <b>"{query}"</b>.</p>
                   <button
                     onClick={() => openLiveCRS(query)}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold shadow-md hover:bg-indigo-700 transition-all"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-black shadow-sm hover:bg-indigo-700 transition-all"
                   >
-                    <Activity className="w-3.5 h-3.5" />
-                    Query Live PhilHealth CRS Directly
+                    <Activity className="w-4 h-4" />
+                    Search Directly in Live PhilHealth CRS
                   </button>
                 </div>
               )}
+
               {!searching && !query && (
                 <div className="p-12 text-center text-slate-400 text-sm">
-                  <Search className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                  Type a code, diagnosis, or procedure above.
+                  <Search className="w-12 h-12 mx-auto mb-3 opacity-25 text-slate-600" />
+                  <p className="font-bold text-slate-600">Enter a code, diagnosis, or procedure</p>
+                  <p className="text-xs text-slate-400 mt-1">Over 8,900+ validated ICD-10 and RVS case rates ready</p>
                 </div>
               )}
-              {results.length > 0 && (
-                <table className="w-full text-left border-collapse min-w-[800px]">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-100">
-                      <th className="px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-wider w-48">Type / Code & Status</th>
-                      <th className="px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-wider">Description</th>
-                      <th className="px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-wider text-right whitespace-nowrap">Case Rate</th>
-                      <th className="px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-wider text-right whitespace-nowrap">Hospital Fee</th>
-                      <th className="px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-wider text-right whitespace-nowrap">Prof. Fee</th>
-                      <th className="px-4 py-3 w-10" />
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50">
-                    {results.map(r => (
-                      <ResultRow
-                        key={`${r.type}-${r.code}`}
-                        record={r}
-                        isFav={favCodes.has(r.code)}
-                        onToggleFav={toggleFav}
-                        onOpenCRS={openLiveCRS}
-                      />
-                    ))}
-                  </tbody>
-                </table>
+
+              {/* Card Grid View */}
+              {results.length > 0 && viewMode === 'CARD' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
+                  {results.map(r => (
+                    <ResultCard
+                      key={`${r.type}-${r.code}`}
+                      record={r}
+                      isFav={favCodes.has(r.code)}
+                      onToggleFav={toggleFav}
+                      onOpenCRS={openLiveCRS}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Desktop Table View */}
+              {results.length > 0 && viewMode === 'TABLE' && (
+                <div className="overflow-x-auto rounded-xl border border-slate-200/80">
+                  <table className="w-full text-left border-collapse min-w-[700px]">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-black text-slate-500 uppercase tracking-wider">
+                        <th className="px-4 py-3">Code & Effectivity</th>
+                        <th className="px-4 py-3">Description</th>
+                        <th className="px-4 py-3 text-right whitespace-nowrap">Case Rate</th>
+                        <th className="px-4 py-3 text-right whitespace-nowrap">Hospital Fee</th>
+                        <th className="px-4 py-3 text-right whitespace-nowrap">Prof. Fee</th>
+                        <th className="px-4 py-3 w-12" />
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {results.map(r => (
+                        <ResultTableRow
+                          key={`${r.type}-${r.code}`}
+                          record={r}
+                          isFav={favCodes.has(r.code)}
+                          onToggleFav={toggleFav}
+                          onOpenCRS={openLiveCRS}
+                        />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           </div>
         )}
 
-        {/* Favorites Tab */}
+        {/* Favorites Tab Content */}
         {tab === 'FAVORITES' && (
-          <div className="overflow-x-auto">
+          <div className="p-3 sm:p-5">
             {favorites.length === 0 ? (
               <div className="p-12 text-center text-slate-400 text-sm">
-                <Star className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                No favorites yet. Star a code from search results.
+                <Star className="w-10 h-10 mx-auto mb-3 opacity-30 text-amber-500" />
+                <p className="font-bold text-slate-600">No favorite codes saved yet</p>
+                <p className="text-xs text-slate-400 mt-1">Star frequently used ICD-10 or RVS codes from search results for instant 1-click access.</p>
               </div>
             ) : (
-              <table className="w-full text-left border-collapse min-w-[800px]">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-100">
-                    <th className="px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-wider w-48">Type / Code & Status</th>
-                    <th className="px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-wider">Description</th>
-                    <th className="px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-wider text-right">Case Rate</th>
-                    <th className="px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-wider text-right">Hospital Fee</th>
-                    <th className="px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-wider text-right">Prof. Fee</th>
-                    <th className="px-4 py-3 w-10" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {favorites.map(f => (
-                    <ResultRow
-                      key={f.id}
-                      record={{
-                        code: f.code,
-                        description: f.description,
-                        case_rate: f.case_rate,
-                        hospital_fee: f.hospital_fee,
-                        professional_fee: f.professional_fee,
-                        type: f.type,
-                        effectivity_date: f.effectivity_date,
-                      }}
-                      isFav={true}
-                      onToggleFav={r => toggleFav(r)}
-                      onOpenCRS={openLiveCRS}
-                    />
-                  ))}
-                </tbody>
-              </table>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
+                {favorites.map(f => (
+                  <ResultCard
+                    key={f.id}
+                    record={{
+                      code: f.code,
+                      description: f.description,
+                      case_rate: f.case_rate,
+                      hospital_fee: f.hospital_fee,
+                      professional_fee: f.professional_fee,
+                      type: f.type,
+                      effectivity_date: f.effectivity_date,
+                    }}
+                    isFav={true}
+                    onToggleFav={r => toggleFav(r)}
+                    onOpenCRS={openLiveCRS}
+                  />
+                ))}
+              </div>
             )}
           </div>
         )}
 
-        {/* History Tab */}
+        {/* History Tab Content */}
         {tab === 'HISTORY' && (
           <div>
             {history.length > 0 && (
-              <div className="px-4 py-3 border-b border-slate-100 flex justify-end">
+              <div className="px-4 py-3 border-b border-slate-100 flex justify-end bg-slate-50/50">
                 <button onClick={clearHistory} className="flex items-center gap-1.5 text-xs font-bold text-red-500 hover:text-red-700 transition-colors">
                   <Trash2 className="w-3.5 h-3.5" />
-                  Clear history
+                  Clear search history
                 </button>
               </div>
             )}
             {history.length === 0 ? (
               <div className="p-12 text-center text-slate-400 text-sm">
-                <Clock className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                <Clock className="w-10 h-10 mx-auto mb-3 opacity-30 text-slate-500" />
                 No recent searches.
               </div>
             ) : (
-              <ul className="divide-y divide-slate-50">
+              <ul className="divide-y divide-slate-100">
                 {history.map(h => (
-                  <li key={h.id} className="px-4 py-3 flex items-center justify-between gap-4 hover:bg-slate-50 group">
+                  <li key={h.id} className="px-4 py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50 group">
                     <div className="flex items-center gap-3 min-w-0">
-                      <Clock className="w-4 h-4 text-slate-300 shrink-0" />
+                      <Clock className="w-4 h-4 text-slate-400 shrink-0" />
                       <span
-                        className="text-sm text-slate-700 font-medium cursor-pointer hover:text-blue-600 truncate"
+                        className="text-sm text-slate-800 font-semibold cursor-pointer hover:text-blue-600 truncate"
                         onClick={() => { setTab('SEARCH'); setQuery(h.keyword); doSearch(h.keyword); }}
                       >
                         {h.keyword}
@@ -404,16 +550,16 @@ export default function CHISLookupView() {
 
       {/* Live PhilHealth CRS Timeline Modal */}
       {crsModalCode && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[85vh] flex flex-col overflow-hidden border border-slate-200">
             {/* Modal Header */}
-            <div className="p-5 bg-gradient-to-r from-slate-900 to-indigo-950 text-white flex items-center justify-between">
+            <div className="p-4 sm:p-5 bg-gradient-to-r from-slate-900 to-indigo-950 text-white flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <Activity className="w-4 h-4 text-indigo-400" />
-                  <span className="text-xs font-black uppercase tracking-wider text-indigo-300">Live PhilHealth CRS Inspector</span>
+                  <span className="text-[11px] font-black uppercase tracking-wider text-indigo-300">Live PhilHealth CRS Inspector</span>
                 </div>
-                <h3 className="text-lg font-black tracking-tight">Code: {crsModalCode}</h3>
+                <h3 className="text-base sm:text-lg font-black tracking-tight">Code: {crsModalCode}</h3>
               </div>
               <button
                 onClick={() => setCrsModalCode(null)}
@@ -424,11 +570,11 @@ export default function CHISLookupView() {
             </div>
 
             {/* Modal Body */}
-            <div className="p-5 overflow-y-auto space-y-4 flex-1">
+            <div className="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1">
               {crsLoading && (
                 <div className="p-12 text-center text-slate-400">
                   <div className="w-8 h-8 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                  <p className="font-semibold text-sm text-slate-600">Connecting to https://crs.philhealth.gov.ph/ ...</p>
+                  <p className="font-semibold text-sm text-slate-700">Connecting to https://crs.philhealth.gov.ph/ ...</p>
                   <p className="text-xs text-slate-400 mt-1">Fetching official circular timeline & facility applicability</p>
                 </div>
               )}
@@ -444,14 +590,14 @@ export default function CHISLookupView() {
               {!crsLoading && crsRecords.map((r, i) => (
                 <div
                   key={i}
-                  className={`rounded-xl border p-4 transition-all ${
+                  className={`rounded-2xl border p-4 sm:p-5 transition-all ${
                     r.isCurrent
-                      ? 'border-emerald-200 bg-emerald-50/40 shadow-sm ring-1 ring-emerald-500/20'
+                      ? 'border-emerald-300 bg-emerald-50/40 shadow-xs ring-1 ring-emerald-500/20'
                       : 'border-slate-200 bg-slate-50/60 opacity-80'
                   }`}
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="text-xs font-black uppercase tracking-wider text-slate-500">Effectivity:</span>
                       <span className={`text-xs font-black px-2.5 py-0.5 rounded-full ${
                         r.isCurrent ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700'
@@ -459,36 +605,36 @@ export default function CHISLookupView() {
                         {r.effectivity}
                       </span>
                       {r.isCurrent && (
-                        <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
                           Current Active Rate
                         </span>
                       )}
                     </div>
                   </div>
 
-                  <p className="text-sm font-bold text-slate-800 mb-3">{r.description}</p>
+                  <p className="text-sm font-bold text-slate-800 mb-3.5 leading-snug">{r.description}</p>
 
                   {/* Primary Case Rate */}
                   {r.firstCaseRate.applicable && (
-                    <div className="grid grid-cols-3 gap-2 bg-white rounded-xl p-3 border border-slate-200 mb-3">
-                      <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase">1st Case Rate</p>
-                        <p className="text-base font-black text-emerald-700">{formatMoney(r.firstCaseRate.caseRate)}</p>
+                    <div className="grid grid-cols-3 gap-2 bg-white rounded-xl p-3 border border-slate-200 mb-3 text-center">
+                      <div className="bg-emerald-50 rounded-lg p-2">
+                        <p className="text-[10px] font-black text-emerald-800 uppercase">1st Case Rate</p>
+                        <p className="text-sm sm:text-base font-black text-emerald-700">{formatMoney(r.firstCaseRate.caseRate)}</p>
                       </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase">HCI Fee (Hospital)</p>
-                        <p className="text-sm font-bold text-slate-700">{formatMoney(r.firstCaseRate.hospitalFee)}</p>
+                      <div className="rounded-lg p-2 border border-slate-100">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase">HCI (Hospital)</p>
+                        <p className="text-xs sm:text-sm font-bold text-slate-800">{formatMoney(r.firstCaseRate.hospitalFee)}</p>
                       </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase">Prof Fee (Doctor)</p>
-                        <p className="text-sm font-bold text-slate-700">{formatMoney(r.firstCaseRate.professionalFee)}</p>
+                      <div className="rounded-lg p-2 border border-slate-100">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase">PF (Doctor)</p>
+                        <p className="text-xs sm:text-sm font-bold text-slate-800">{formatMoney(r.firstCaseRate.professionalFee)}</p>
                       </div>
                     </div>
                   )}
 
                   {/* Secondary Case Rate */}
                   {r.secondCaseRate.applicable && (
-                    <div className="grid grid-cols-3 gap-2 bg-white/70 rounded-xl p-2.5 border border-slate-200 mb-3 text-xs">
+                    <div className="grid grid-cols-3 gap-2 bg-white/70 rounded-xl p-2.5 border border-slate-200 mb-3 text-xs text-center">
                       <div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase">2nd Case Rate</p>
                         <p className="font-bold text-slate-800">{formatMoney(r.secondCaseRate.caseRate)}</p>
@@ -508,14 +654,14 @@ export default function CHISLookupView() {
                   <div className="mt-2 pt-2 border-t border-slate-200/60">
                     <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Applicable Healthcare Facilities</p>
                     <div className="flex flex-wrap gap-1.5 text-[11px]">
-                      {r.facilities.level1 && <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-bold">Level 1</span>}
-                      {r.facilities.level2 && <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-bold">Level 2</span>}
-                      {r.facilities.level3 && <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-bold">Level 3</span>}
-                      {r.facilities.asc && <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">ASC</span>}
-                      {r.facilities.pcf && <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">PCF</span>}
-                      {r.facilities.mcp && <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">MCP / MAT</span>}
-                      {r.facilities.fsdc && <span className="px-2 py-0.5 rounded bg-purple-100 text-purple-800 font-bold">FSDC</span>}
-                      {r.facilities.others && <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold">Other HCIs</span>}
+                      {r.facilities.level1 && <span className="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 font-bold">Level 1</span>}
+                      {r.facilities.level2 && <span className="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 font-bold">Level 2</span>}
+                      {r.facilities.level3 && <span className="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 font-bold">Level 3</span>}
+                      {r.facilities.asc && <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold">ASC</span>}
+                      {r.facilities.pcf && <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold">PCF</span>}
+                      {r.facilities.mcp && <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold">MCP / MAT</span>}
+                      {r.facilities.fsdc && <span className="px-2 py-0.5 rounded-md bg-purple-100 text-purple-800 font-bold">FSDC</span>}
+                      {r.facilities.others && <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold">Other HCIs</span>}
                     </div>
                   </div>
                 </div>

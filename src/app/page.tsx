@@ -164,7 +164,7 @@ export default function Home() {
           onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
         />
 
-        <main className="p-4 sm:p-6 lg:p-8 w-full max-w-[1700px] mx-auto flex-1 transition-all">
+        <main className="p-3 sm:p-6 lg:p-8 w-full max-w-[1700px] mx-auto flex-1 transition-all">
           {currentView === 'DASHBOARD' && dashboardMetrics && (
             <DashboardView
               metrics={dashboardMetrics}
