@@ -19,31 +19,88 @@ export async function GET(req: NextRequest) {
   const seenCodes = new Set<string>();
 
   // Split multiple search terms if user entered e.g. "P03.4, 99460" or "P03.4 + 99460" or "P03.4 and 99460"
-  const terms = rawQ
+  const rawTerms = rawQ
     .split(/[,+&/|]|\s+\band\b\s+/i)
     .map(t => t.trim())
     .filter(t => t.length > 0);
 
-  // If no delimiter was found, also check if 2 codes are separated by space (e.g. "P03.4 99460")
-  let searchTokens = terms;
-  if (terms.length === 1 && /\s+/.test(terms[0])) {
-    const spaceTokens = terms[0].split(/\s+/).filter(w => /^[A-Z0-9.]{2,}$/i.test(w));
+  let searchTokens = rawTerms;
+  if (rawTerms.length === 1 && /\s+/.test(rawTerms[0])) {
+    const spaceTokens = rawTerms[0].split(/\s+/).filter(w => /^[A-Z0-9.]{2,}$/i.test(w));
     if (spaceTokens.length >= 2) {
       searchTokens = spaceTokens;
     }
   }
 
-  async function searchForTerm(searchTerm: string) {
+  // 1. First search exact code matches for each token so they are guaranteed to appear first
+  for (const token of searchTokens) {
+    const cleanToken = token.replace(/[^A-Z0-9.]/gi, '');
+    if (!cleanToken) continue;
+
+    // Check exact in ICD
+    const { data: icdExact } = await supabase
+      .from('icd10_db')
+      .select('*')
+      .ilike('code', cleanToken)
+      .limit(1);
+
+    if (icdExact && icdExact.length > 0) {
+      const row = icdExact[0];
+      const key = `ICD-${row.code}`;
+      if (!seenCodes.has(key)) {
+        seenCodes.add(key);
+        results.push({
+          code: row.code,
+          description: row.description,
+          case_rate: Number(row.case_rate) || 0,
+          hospital_fee: Number(row.hospital_fee) || 0,
+          professional_fee: Number(row.professional_fee) || 0,
+          effectivity_date: row.effectivity_date || null,
+          type: 'ICD',
+          isExactMatch: true,
+          matchedToken: cleanToken.toUpperCase(),
+        });
+      }
+    }
+
+    // Check exact in RVS
+    const { data: rvsExact } = await supabase
+      .from('rvs_db')
+      .select('*')
+      .ilike('code', cleanToken)
+      .limit(1);
+
+    if (rvsExact && rvsExact.length > 0) {
+      const row = rvsExact[0];
+      const key = `RVS-${row.code}`;
+      if (!seenCodes.has(key)) {
+        seenCodes.add(key);
+        results.push({
+          code: row.code,
+          description: row.description,
+          case_rate: Number(row.case_rate) || 0,
+          hospital_fee: Number(row.hospital_fee) || 0,
+          professional_fee: Number(row.professional_fee) || 0,
+          effectivity_date: row.effectivity_date || null,
+          type: 'RVS',
+          isExactMatch: true,
+          matchedToken: cleanToken.toUpperCase(),
+        });
+      }
+    }
+  }
+
+  // 2. Then search prefix / partial / description matches
+  for (const token of searchTokens) {
     async function searchTable(table: 'icd10_db' | 'rvs_db', recordType: 'ICD' | 'RVS') {
       if (type !== 'ALL' && type !== recordType) return;
 
-      const query = supabase
+      const { data, error } = await supabase
         .from(table)
         .select('*')
-        .or(`code.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`)
-        .limit(limit);
+        .or(`code.ilike.%${token}%,description.ilike.%${token}%`)
+        .limit(20);
 
-      const { data, error } = await query;
       if (error || !data) return;
 
       data.forEach((row: any) => {
@@ -58,7 +115,8 @@ export async function GET(req: NextRequest) {
             professional_fee: Number(row.professional_fee) || 0,
             effectivity_date: row.effectivity_date || null,
             type: recordType,
-            matchedQuery: searchTerm,
+            isExactMatch: false,
+            matchedToken: token.toUpperCase(),
           });
         }
       });
@@ -70,21 +128,21 @@ export async function GET(req: NextRequest) {
     ]);
   }
 
-  // Execute search for all terms
-  for (const term of searchTokens) {
-    await searchForTerm(term);
-  }
-
-  // Sort exact matches per search token first
+  // Sort: Exact matches first, in order of searchTokens!
   const upperTokens = searchTokens.map(t => t.toUpperCase());
   results.sort((a, b) => {
     const aCode = a.code.toUpperCase();
     const bCode = b.code.toUpperCase();
-    const aExact = upperTokens.includes(aCode);
-    const bExact = upperTokens.includes(bCode);
-    if (aExact && !bExact) return -1;
-    if (!aExact && bExact) return 1;
 
+    const aTokenIdx = upperTokens.findIndex(t => aCode === t);
+    const bTokenIdx = upperTokens.findIndex(t => bCode === t);
+
+    // If both are exact matches, maintain token query order!
+    if (aTokenIdx !== -1 && bTokenIdx !== -1) return aTokenIdx - bTokenIdx;
+    if (aTokenIdx !== -1) return -1;
+    if (bTokenIdx !== -1) return 1;
+
+    // Prefix matches next
     const aPrefix = upperTokens.some(t => aCode.startsWith(t));
     const bPrefix = upperTokens.some(t => bCode.startsWith(t));
     if (aPrefix && !bPrefix) return -1;

@@ -554,8 +554,19 @@ export default function CHISLookupView() {
               {/* DUAL CASE RATE CLAIM ESTIMATOR BANNER (when 2+ codes are matched) */}
               {!searching && results.length >= 2 && (
                 (() => {
-                  const r1 = results[0];
-                  const r2 = results[1];
+                  const tokens = query.split(/[,+&/|]|\s+\band\b\s+/i).map(t => t.trim().toUpperCase()).filter(Boolean);
+                  let r1 = results[0];
+                  let r2 = results[1];
+
+                  if (tokens.length >= 2) {
+                    const match1 = results.find(r => r.code.toUpperCase() === tokens[0] || r.code.toUpperCase().startsWith(tokens[0]));
+                    const match2 = results.find(r => r !== match1 && (r.code.toUpperCase() === tokens[1] || r.code.toUpperCase().startsWith(tokens[1])));
+                    if (match1) r1 = match1;
+                    if (match2) r2 = match2;
+                  }
+
+                  if (!r1 || !r2 || r1.code === r2.code) return null;
+
                   const r2Allowed = isSecondCaseRateAllowed(r2.code, r2.description);
                   const r1Rate = r1.case_rate || 0;
                   const r2Rate = r2Allowed ? (r2.case_rate || 0) : 0;
