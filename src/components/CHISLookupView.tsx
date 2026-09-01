@@ -59,15 +59,15 @@ function ResultCard({
   onOpenCRS: (code: string) => void;
 }) {
   return (
-    <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group">
+    <div className="bg-white rounded-2xl p-4 sm:p-5 border-2 border-slate-200 shadow-xs hover:shadow-md hover:border-blue-400 transition-all flex flex-col justify-between group">
       <div>
         {/* Card Header: Type, Code, Favorite */}
         <div className="flex items-start justify-between gap-3 mb-2.5">
           <div className="flex flex-wrap items-center gap-2">
             <TypeBadge type={record.type} />
-            <span className="font-mono font-black text-lg text-slate-900 tracking-tight">{record.code}</span>
-            <div className="flex items-center gap-1 text-[11px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
-              <Calendar className="w-3 h-3 text-blue-600 shrink-0" />
+            <span className="font-mono font-black text-xl text-slate-950 tracking-tight">{record.code}</span>
+            <div className="flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">
+              <Calendar className="w-3.5 h-3.5 text-blue-600 shrink-0" />
               <span>{record.effectivity_date || 'PhilHealth ACR / CRS'}</span>
             </div>
           </div>
@@ -76,8 +76,8 @@ function ResultCard({
             title={isFav ? 'Remove from favorites' : 'Add to favorites'}
             className={`p-2 rounded-xl transition-all ${
               isFav
-                ? 'text-amber-500 bg-amber-50 hover:bg-amber-100'
-                : 'text-slate-300 hover:text-amber-400 hover:bg-amber-50'
+                ? 'text-amber-500 bg-amber-50 hover:bg-amber-100 ring-1 ring-amber-300'
+                : 'text-slate-400 hover:text-amber-500 hover:bg-amber-50'
             }`}
           >
             {isFav ? <Star className="w-5 h-5 fill-current" /> : <StarOff className="w-5 h-5" />}
@@ -85,46 +85,59 @@ function ResultCard({
         </div>
 
         {/* Description */}
-        <p className="text-sm font-semibold text-slate-800 leading-relaxed mb-4">
+        <p className="text-sm sm:text-base font-bold text-slate-800 leading-snug mb-4">
           {record.description}
         </p>
       </div>
 
       <div>
-        {/* Case Rate Breakdown Grid */}
-        <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-100 mb-3.5 text-center">
-          <div className="bg-emerald-50/80 border border-emerald-200/60 rounded-lg p-2 flex flex-col justify-center">
-            <p className="text-[10px] font-black text-emerald-800 uppercase tracking-wider mb-0.5">Case Rate</p>
-            <p className="text-sm sm:text-base font-black text-emerald-700">{formatMoney(record.case_rate)}</p>
-          </div>
-          <div className="bg-white border border-slate-200/60 rounded-lg p-2 flex flex-col justify-center">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 flex items-center justify-center gap-1">
-              <Building2 className="w-2.5 h-2.5 text-slate-400" /> HCI
+        {/* Case Rate Prominent Display */}
+        <div className="rounded-xl bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-100/60 border-2 border-emerald-300/80 p-3 mb-2.5 flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-black text-emerald-900 uppercase tracking-wider">Total Case Rate</p>
+            <p className="text-2xl sm:text-3xl font-black text-emerald-800 tracking-tight leading-none mt-0.5">
+              {formatMoney(record.case_rate)}
             </p>
-            <p className="text-xs sm:text-sm font-bold text-slate-700">{formatMoney(record.hospital_fee)}</p>
           </div>
-          <div className="bg-white border border-slate-200/60 rounded-lg p-2 flex flex-col justify-center">
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 flex items-center justify-center gap-1">
-              <User className="w-2.5 h-2.5 text-slate-400" /> Prof Fee
+          <span className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white text-[11px] font-black uppercase tracking-wider shadow-xs">
+            PhilHealth
+          </span>
+        </div>
+
+        {/* HCI & Prof Fee Breakdown Grid */}
+        <div className="grid grid-cols-2 gap-2 mb-3.5">
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-left">
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider flex items-center gap-1 mb-0.5">
+              <Building2 className="w-3 h-3 text-slate-400" /> Hospital Fee (HCI)
             </p>
-            <p className="text-xs sm:text-sm font-bold text-slate-700">{formatMoney(record.professional_fee)}</p>
+            <p className="text-base sm:text-lg font-black text-slate-900 leading-none">
+              {formatMoney(record.hospital_fee)}
+            </p>
+          </div>
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-left">
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider flex items-center gap-1 mb-0.5">
+              <User className="w-3 h-3 text-slate-400" /> Doctor (Prof Fee)
+            </p>
+            <p className="text-base sm:text-lg font-black text-slate-900 leading-none">
+              {formatMoney(record.professional_fee)}
+            </p>
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+        <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-slate-100">
           <button
             onClick={() => onOpenCRS(record.code)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-xs transition-all"
           >
-            <Activity className="w-3.5 h-3.5 text-indigo-600" />
+            <Activity className="w-3.5 h-3.5" />
             <span>Live CRS Timeline</span>
           </button>
           <a
             href="https://www.philhealth.gov.ph/services/acr/"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-blue-600 font-semibold"
+            className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-blue-600 font-bold"
           >
             <span>PhilHealth Portal</span>
             <ExternalLink className="w-3 h-3" />
@@ -149,55 +162,55 @@ function ResultTableRow({
 }) {
   return (
     <tr className="hover:bg-slate-50/80 group transition-colors">
-      <td className="px-4 py-3.5 align-top w-44">
+      <td className="px-4 py-3.5 align-top w-48">
         <div className="flex items-center gap-2">
           <TypeBadge type={record.type} />
-          <span className="font-mono font-black text-base text-slate-900">{record.code}</span>
+          <span className="font-mono font-black text-lg text-slate-950">{record.code}</span>
         </div>
-        <div className="mt-1 flex items-center gap-1 text-[11px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded w-fit">
+        <div className="mt-1 flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded w-fit">
           <Calendar className="w-3 h-3 text-blue-600 shrink-0" />
           <span>{record.effectivity_date || 'PhilHealth ACR / CRS'}</span>
         </div>
       </td>
       <td className="px-4 py-3.5 text-sm text-slate-700 leading-snug align-top">
-        <p className="font-semibold text-slate-800 mb-1.5">{record.description}</p>
+        <p className="font-bold text-slate-800 mb-1.5 text-sm sm:text-base">{record.description}</p>
         <div className="flex items-center gap-3">
           <button
             onClick={() => onOpenCRS(record.code)}
-            className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded transition-colors"
+            className="inline-flex items-center gap-1 text-xs font-black text-indigo-700 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg transition-colors"
           >
-            <Activity className="w-3 h-3 text-indigo-500" />
+            <Activity className="w-3.5 h-3.5 text-indigo-600" />
             <span>Live CRS Timeline</span>
           </button>
           <a
             href="https://www.philhealth.gov.ph/services/acr/"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-blue-600 font-medium"
+            className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-blue-600 font-bold"
           >
             <span>PhilHealth Portal</span>
-            <ExternalLink className="w-2.5 h-2.5" />
+            <ExternalLink className="w-3 h-3" />
           </a>
         </div>
       </td>
       <td className="px-4 py-3.5 text-right align-top whitespace-nowrap">
-        <span className="inline-block px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 font-black text-sm border border-emerald-200/60">
+        <span className="inline-block px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 font-black text-lg border-2 border-emerald-300">
           {formatMoney(record.case_rate)}
         </span>
       </td>
-      <td className="px-4 py-3.5 text-right text-sm font-semibold text-slate-600 whitespace-nowrap align-top">{formatMoney(record.hospital_fee)}</td>
-      <td className="px-4 py-3.5 text-right text-sm font-semibold text-slate-600 whitespace-nowrap align-top">{formatMoney(record.professional_fee)}</td>
+      <td className="px-4 py-3.5 text-right text-base font-black text-slate-800 whitespace-nowrap align-top">{formatMoney(record.hospital_fee)}</td>
+      <td className="px-4 py-3.5 text-right text-base font-black text-slate-800 whitespace-nowrap align-top">{formatMoney(record.professional_fee)}</td>
       <td className="px-4 py-3.5 text-center align-top w-12">
         <button
           onClick={() => onToggleFav(record)}
           title={isFav ? 'Remove from favorites' : 'Add to favorites'}
           className={`p-1.5 rounded-xl transition-all ${
             isFav
-              ? 'text-amber-500 bg-amber-50 hover:bg-amber-100'
+              ? 'text-amber-500 bg-amber-50 hover:bg-amber-100 ring-1 ring-amber-300'
               : 'text-slate-300 hover:text-amber-400 hover:bg-amber-50 opacity-0 group-hover:opacity-100'
           }`}
         >
-          {isFav ? <Star className="w-4 h-4 fill-current" /> : <StarOff className="w-4 h-4" />}
+          {isFav ? <Star className="w-5 h-5 fill-current" /> : <StarOff className="w-5 h-5" />}
         </button>
       </td>
     </tr>
@@ -616,36 +629,36 @@ export default function CHISLookupView() {
 
                   {/* Primary Case Rate */}
                   {r.firstCaseRate.applicable && (
-                    <div className="grid grid-cols-3 gap-2 bg-white rounded-xl p-3 border border-slate-200 mb-3 text-center">
-                      <div className="bg-emerald-50 rounded-lg p-2">
-                        <p className="text-[10px] font-black text-emerald-800 uppercase">1st Case Rate</p>
-                        <p className="text-sm sm:text-base font-black text-emerald-700">{formatMoney(r.firstCaseRate.caseRate)}</p>
+                    <div className="grid grid-cols-3 gap-2 bg-white rounded-xl p-3.5 border-2 border-slate-200 mb-3 text-center">
+                      <div className="bg-emerald-50 rounded-lg p-2.5 border border-emerald-200">
+                        <p className="text-[11px] font-black text-emerald-900 uppercase">1st Case Rate</p>
+                        <p className="text-xl sm:text-2xl font-black text-emerald-800">{formatMoney(r.firstCaseRate.caseRate)}</p>
                       </div>
-                      <div className="rounded-lg p-2 border border-slate-100">
-                        <p className="text-[10px] font-bold text-slate-500 uppercase">HCI (Hospital)</p>
-                        <p className="text-xs sm:text-sm font-bold text-slate-800">{formatMoney(r.firstCaseRate.hospitalFee)}</p>
+                      <div className="rounded-lg p-2.5 border border-slate-200 bg-slate-50">
+                        <p className="text-[11px] font-bold text-slate-500 uppercase">HCI (Hospital)</p>
+                        <p className="text-sm sm:text-base font-black text-slate-900">{formatMoney(r.firstCaseRate.hospitalFee)}</p>
                       </div>
-                      <div className="rounded-lg p-2 border border-slate-100">
-                        <p className="text-[10px] font-bold text-slate-500 uppercase">PF (Doctor)</p>
-                        <p className="text-xs sm:text-sm font-bold text-slate-800">{formatMoney(r.firstCaseRate.professionalFee)}</p>
+                      <div className="rounded-lg p-2.5 border border-slate-200 bg-slate-50">
+                        <p className="text-[11px] font-bold text-slate-500 uppercase">PF (Doctor)</p>
+                        <p className="text-sm sm:text-base font-black text-slate-900">{formatMoney(r.firstCaseRate.professionalFee)}</p>
                       </div>
                     </div>
                   )}
 
                   {/* Secondary Case Rate */}
                   {r.secondCaseRate.applicable && (
-                    <div className="grid grid-cols-3 gap-2 bg-white/70 rounded-xl p-2.5 border border-slate-200 mb-3 text-xs text-center">
-                      <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase">2nd Case Rate</p>
-                        <p className="font-bold text-slate-800">{formatMoney(r.secondCaseRate.caseRate)}</p>
+                    <div className="grid grid-cols-3 gap-2 bg-white rounded-xl p-2.5 border border-slate-200 mb-3 text-xs text-center">
+                      <div className="bg-slate-100 rounded-lg p-2">
+                        <p className="text-[10px] font-black text-slate-700 uppercase">2nd Case Rate</p>
+                        <p className="text-sm sm:text-base font-black text-slate-900">{formatMoney(r.secondCaseRate.caseRate)}</p>
                       </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase">2nd HCI Fee</p>
-                        <p className="font-medium text-slate-600">{formatMoney(r.secondCaseRate.hospitalFee)}</p>
+                      <div className="p-2">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase">2nd HCI Fee</p>
+                        <p className="font-black text-slate-800">{formatMoney(r.secondCaseRate.hospitalFee)}</p>
                       </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase">2nd Prof Fee</p>
-                        <p className="font-medium text-slate-600">{formatMoney(r.secondCaseRate.professionalFee)}</p>
+                      <div className="p-2">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase">2nd Prof Fee</p>
+                        <p className="font-black text-slate-800">{formatMoney(r.secondCaseRate.professionalFee)}</p>
                       </div>
                     </div>
                   )}

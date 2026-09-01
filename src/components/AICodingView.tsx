@@ -23,47 +23,61 @@ function formatMoney(val: number) {
 
 function CandidateCard({ candidate, index }: { candidate: AICodingCandidate; index: number }) {
   return (
-    <div className={`rounded-2xl p-4 sm:p-5 border transition-all ${
+    <div className={`rounded-2xl p-4 sm:p-5 border-2 transition-all ${
       index === 0
-        ? 'border-indigo-200 bg-gradient-to-br from-indigo-50/80 to-blue-50/40 shadow-xs ring-1 ring-indigo-500/10'
+        ? 'border-indigo-300 bg-gradient-to-br from-indigo-50/90 to-blue-50/60 shadow-sm ring-2 ring-indigo-500/20'
         : 'border-slate-200 bg-white hover:bg-slate-50/50'
     }`}>
       <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
         <div className="flex items-center gap-2">
-          <span className="font-mono font-black text-lg sm:text-xl text-slate-900">{candidate.code}</span>
+          <span className="font-mono font-black text-xl sm:text-2xl text-slate-950">{candidate.code}</span>
           <ConfidencePill confidence={candidate.confidence} />
         </div>
         {index === 0 && (
-          <span className="text-[10px] font-black text-indigo-700 bg-indigo-100 border border-indigo-200 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+          <span className="text-[11px] font-black text-indigo-800 bg-indigo-100 border border-indigo-200 px-3 py-0.5 rounded-full uppercase tracking-wider">
             ★ Top Recommendation
           </span>
         )}
       </div>
 
-      <p className="text-sm font-semibold text-slate-800 mb-3.5 leading-relaxed">{candidate.description}</p>
+      <p className="text-sm sm:text-base font-bold text-slate-800 mb-3.5 leading-snug">{candidate.description}</p>
 
       {candidate.note && (
-        <div className="mb-3 text-xs bg-white/80 border border-slate-200/80 rounded-xl p-2.5 text-slate-600 font-medium">
-          💡 <span className="font-bold text-slate-700">Coding Rule:</span> {candidate.note}
+        <div className="mb-3 text-xs bg-white/90 border border-slate-200 rounded-xl p-2.5 text-slate-700 font-semibold">
+          💡 <span className="font-black text-slate-900">Coding Rule:</span> {candidate.note}
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-2 text-center">
-        <div className="bg-emerald-50/90 rounded-xl border border-emerald-200/80 p-2.5 flex flex-col justify-center">
-          <p className="text-[10px] font-black text-emerald-800 uppercase tracking-wider mb-0.5">Case Rate</p>
-          <p className="text-sm sm:text-base font-black text-emerald-700">{formatMoney(candidate.caseRate)}</p>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200/80 p-2 flex flex-col justify-center">
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 flex items-center justify-center gap-1">
-            <Building2 className="w-2.5 h-2.5 text-slate-400" /> Hospital
+      {/* Case Rate Prominent Display */}
+      <div className="rounded-xl bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-100/60 border-2 border-emerald-300/80 p-3 mb-2.5 flex items-center justify-between">
+        <div>
+          <p className="text-[11px] font-black text-emerald-900 uppercase tracking-wider">Total Case Rate</p>
+          <p className="text-2xl sm:text-3xl font-black text-emerald-800 tracking-tight leading-none mt-0.5">
+            {formatMoney(candidate.caseRate)}
           </p>
-          <p className="text-xs sm:text-sm font-bold text-slate-800">{formatMoney(candidate.hospitalFee)}</p>
         </div>
-        <div className="bg-white rounded-xl border border-slate-200/80 p-2 flex flex-col justify-center">
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 flex items-center justify-center gap-1">
-            <User className="w-2.5 h-2.5 text-slate-400" /> Doctor PF
+        <span className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white text-[11px] font-black uppercase tracking-wider shadow-xs">
+          PhilHealth
+        </span>
+      </div>
+
+      {/* HCI & Prof Fee Breakdown */}
+      <div className="grid grid-cols-2 gap-2 text-left">
+        <div className="bg-white rounded-xl border border-slate-200 p-2.5">
+          <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider flex items-center gap-1 mb-0.5">
+            <Building2 className="w-3 h-3 text-slate-400" /> Hospital Fee (HCI)
           </p>
-          <p className="text-xs sm:text-sm font-bold text-slate-800">{formatMoney(candidate.professionalFee)}</p>
+          <p className="text-base sm:text-lg font-black text-slate-900 leading-none">
+            {formatMoney(candidate.hospitalFee)}
+          </p>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-2.5">
+          <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider flex items-center gap-1 mb-0.5">
+            <User className="w-3 h-3 text-slate-400" /> Doctor (Prof Fee)
+          </p>
+          <p className="text-base sm:text-lg font-black text-slate-900 leading-none">
+            {formatMoney(candidate.professionalFee)}
+          </p>
         </div>
       </div>
     </div>
