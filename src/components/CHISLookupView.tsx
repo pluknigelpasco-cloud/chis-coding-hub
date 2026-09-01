@@ -551,68 +551,7 @@ export default function CHISLookupView() {
                 </div>
               )}
 
-              {/* DUAL CASE RATE CLAIM ESTIMATOR BANNER (when 2+ codes are matched) */}
-              {!searching && results.length >= 2 && (
-                (() => {
-                  const tokens = query.split(/[,+&/|]|\s+\band\b\s+/i).map(t => t.trim().toUpperCase()).filter(Boolean);
-                  let r1 = results[0];
-                  let r2 = results[1];
 
-                  if (tokens.length >= 2) {
-                    const match1 = results.find(r => r.code.toUpperCase() === tokens[0] || r.code.toUpperCase().startsWith(tokens[0]));
-                    const match2 = results.find(r => r !== match1 && (r.code.toUpperCase() === tokens[1] || r.code.toUpperCase().startsWith(tokens[1])));
-                    if (match1) r1 = match1;
-                    if (match2) r2 = match2;
-                  }
-
-                  if (!r1 || !r2 || r1.code === r2.code) return null;
-
-                  const r2Allowed = isSecondCaseRateAllowed(r2.code, r2.description);
-                  const r1Rate = r1.case_rate || 0;
-                  const r2Rate = r2Allowed ? (r2.case_rate || 0) : 0;
-                  const totalClaim = r1Rate + r2Rate;
-                  const totalHCI = (r1.hospital_fee || 0) + (r2Allowed ? (r2.hospital_fee || 0) : 0);
-                  const totalPF = (r1.professional_fee || 0) + (r2Allowed ? (r2.professional_fee || 0) : 0);
-
-                  return (
-                    <div className="mb-5 rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-4 sm:p-5 text-white shadow-lg border border-indigo-500/30 animate-fadeIn">
-                      <div className="flex flex-wrap items-center justify-between gap-2 mb-3 pb-2.5 border-b border-white/15">
-                        <div className="flex items-center gap-2">
-                          <span className="px-2.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-black uppercase tracking-wider">
-                            Dual Case Rate Claim Estimator
-                          </span>
-                          <span className="text-xs text-slate-300 font-semibold">
-                            Primary: <b>{r1.code}</b> + Secondary: <b>{r2.code}</b>
-                          </span>
-                        </div>
-                        <span className="text-[11px] text-indigo-300 font-medium">Single Period of Confinement</span>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        {/* Total Combined Claim */}
-                        <div className="bg-white/10 rounded-xl p-3 border border-white/15 backdrop-blur-xs flex flex-col justify-center">
-                          <p className="text-[10px] font-black uppercase tracking-wider text-emerald-400">Total Combined Reimbursement</p>
-                          <p className="text-2xl sm:text-3xl font-black text-white tracking-tight mt-0.5">{formatMoney(totalClaim)}</p>
-                        </div>
-
-                        {/* Combined Hospital Fee */}
-                        <div className="bg-white/5 rounded-xl p-3 border border-white/10 flex flex-col justify-center">
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Combined Hospital (HCI)</p>
-                          <p className="text-lg sm:text-xl font-black text-slate-100 mt-0.5">{formatMoney(totalHCI)}</p>
-                          <p className="text-[10px] text-slate-400 mt-0.5">{r1.code}: {formatMoney(r1.hospital_fee)} {r2Allowed ? `+ ${r2.code}: ${formatMoney(r2.hospital_fee)}` : '(2nd N/A)'}</p>
-                        </div>
-
-                        {/* Combined Professional Fee */}
-                        <div className="bg-white/5 rounded-xl p-3 border border-white/10 flex flex-col justify-center">
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Combined Doctor (PF)</p>
-                          <p className="text-lg sm:text-xl font-black text-slate-100 mt-0.5">{formatMoney(totalPF)}</p>
-                          <p className="text-[10px] text-slate-400 mt-0.5">{r1.code}: {formatMoney(r1.professional_fee)} {r2Allowed ? `+ ${r2.code}: ${formatMoney(r2.professional_fee)}` : '(2nd N/A)'}</p>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()
-              )}
 
               {!searching && query && results.length === 0 && (
                 <div className="p-10 text-center text-slate-500 text-sm bg-slate-50 rounded-2xl border border-dashed border-slate-200">
