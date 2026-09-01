@@ -1,10 +1,8 @@
 /**
- * CHIS → Supabase One-Time Seeder (Fixed)
- * ---------------------------------
+ * CHIS → Supabase One-Time Seeder (Auto-Deduplicated)
+ * ----------------------------------------------------
  * Paste this file into your CHIS Google Apps Script project.
  * Then run:  exportCHISToSupabase()
- *
- * Safe to run more than once — uses UPSERT / Clean Sync.
  */
 
 var SUPABASE_URL = 'https://jtcaacarwzggscnmftfm.supabase.co';
@@ -21,32 +19,32 @@ function exportCHISToSupabase() {
 
   // 1. ICD10_DB
   var icdCount = exportSheetToSupabase_(ss, 'ICD10_DB', 'icd10_db', log);
-  log.push('ICD10_DB: ' + icdCount + ' rows sent');
+  log.push('ICD10_DB: ' + icdCount + ' unique codes uploaded');
 
   // 2. RVS_DB
   var rvsCount = exportSheetToSupabase_(ss, 'RVS_DB', 'rvs_db', log);
-  log.push('RVS_DB: ' + rvsCount + ' rows sent');
+  log.push('RVS_DB: ' + rvsCount + ' unique codes uploaded');
 
   // 3. Abbreviations
   var abbrevCount = exportAbbreviations_(ss, log);
-  log.push('Abbreviations: ' + abbrevCount + ' rows sent');
+  log.push('Abbreviations: ' + abbrevCount + ' rows verified');
 
   // 4. Diagnosis Index
   var diagCount = exportDiagnosisIndex_(ss, log);
-  log.push('Diagnosis Index: ' + diagCount + ' rows sent');
+  log.push('Diagnosis Index: ' + diagCount + ' rows verified');
 
   // 5. Combination Rules
   var rulesCount = exportCombinationRules_(ss, log);
-  log.push('Combination Rules: ' + rulesCount + ' rows sent');
+  log.push('Combination Rules: ' + rulesCount + ' rows verified');
 
   log.push('=== Done ===');
   Logger.log(log.join('\n'));
-  Browser.msgBox('Export Complete!\n\nICD: ' + icdCount + '\nRVS: ' + rvsCount +
+  Browser.msgBox('Export Complete!\n\nICD-10 codes: ' + icdCount + '\nRVS codes: ' + rvsCount +
     '\nAbbreviations: ' + abbrevCount + '\nDiagnosis Index: ' + diagCount +
-    '\nCombination Rules: ' + rulesCount + '\n\nCheck View > Logs for details.');
+    '\nCombination Rules: ' + rulesCount + '\n\nNa-upload na tanan sa Supabase!');
 }
 
-// ─── ICD10 / RVS export ───────────────────────────────────────────────────────
+// ─── ICD10 / RVS export (With in-memory deduplication) ─────────────────────────
 
 function exportSheetToSupabase_(ss, sheetName, tableName, log) {
   var sheet = ss.getSheetByName(sheetName);
@@ -61,26 +59,34 @@ function exportSheetToSupabase_(ss, sheetName, tableName, log) {
     return 0;
   }
 
-  // Read all data rows (skip header row 1)
+  // Read all data rows
   var data = sheet.getRange(2, 1, lastRow - 1, 5).getValues();
-  var rows = [];
+  var rowsMap = {};
 
   data.forEach(function(row) {
     var code = String(row[0] || '').trim();
     var description = String(row[1] || '').trim();
     if (!code || !description) return;
 
-    rows.push({
+    // Deduplicate by code
+    rowsMap[code] = {
       code: code,
       description: description,
       case_rate: toNumber_(row[2]),
       hospital_fee: toNumber_(row[3]),
       professional_fee: toNumber_(row[4])
-    });
+    };
   });
 
+  var rows = [];
+  for (var k in rowsMap) {
+    if (rowsMap.hasOwnProperty(k)) {
+      rows.push(rowsMap[k]);
+    }
+  }
+
   if (rows.length === 0) {
-    log.push('No valid rows in ' + sheetName);
+    log.push('No valid rows found in ' + sheetName);
     return 0;
   }
 
@@ -108,13 +114,18 @@ function exportAbbreviations_(ss, log) {
   if (lastRow < 2) return 0;
 
   var data = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
-  var rows = [];
+  var rowsMap = {};
   data.forEach(function(row) {
     var abbrev = String(row[0] || '').trim().toUpperCase();
     var meaning = String(row[1] || '').trim();
     if (!abbrev || !meaning) return;
-    rows.push({ abbreviation: abbrev, meaning: meaning });
+    rowsMap[abbrev] = { abbreviation: abbrev, meaning: meaning };
   });
+
+  var rows = [];
+  for (var k in rowsMap) {
+    if (rowsMap.hasOwnProperty(k)) rows.push(rowsMap[k]);
+  }
 
   if (!rows.length) return 0;
   var result = supabaseUpsert_('abbreviations', rows, 'abbreviation');
@@ -211,7 +222,6 @@ function supabaseUpsert_(table, rows, onConflict) {
 
 function supabaseClearAndInsert_(table, rows) {
   try {
-    // Delete existing records
     var delUrl = SUPABASE_URL + '/rest/v1/' + table + '?id=not.is.null';
     UrlFetchApp.fetch(delUrl, {
       method: 'DELETE',
@@ -222,7 +232,6 @@ function supabaseClearAndInsert_(table, rows) {
       muteHttpExceptions: true
     });
 
-    // Insert fresh records
     var insUrl = SUPABASE_URL + '/rest/v1/' + table;
     var response = UrlFetchApp.fetch(insUrl, {
       method: 'POST',
