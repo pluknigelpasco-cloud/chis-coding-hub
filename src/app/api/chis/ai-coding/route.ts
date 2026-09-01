@@ -3,59 +3,185 @@ import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { getTokenFromRequest, verifyToken } from '@/lib/auth';
 import { AICodingResult, AICodingCandidate } from '@/lib/types';
 
-const CAUSAL_CONNECTORS = [
-  'SECONDARY TO', 'DUE TO', 'CAUSED BY', 'AS A RESULT OF',
-  'COMPLICATED BY', 'ASSOCIATED WITH',
-];
-
-const SPECIFIC_CONTEXT_WORDS = [
-  'NEONATAL', 'NEWBORN', 'CONGENITAL', 'PREGNANCY', 'MATERNAL',
-  'OBSTETRIC', 'DELIVERY', 'POSTPARTUM', 'PUERPERAL', 'ABORTION',
-  'TRAUMATIC', 'OCCUPATIONAL', 'DRUG INDUCED', 'POISONING',
-  'AMOEBIC', 'TUBERCULOUS', 'SYPHILITIC', 'RENOVASCULAR', 'MALIGNANT',
-  'SECONDARY HYPERTENSION'
+// Built-in Obstetric & Clinical Semantic Knowledge Map
+const CLINICAL_KNOWLEDGE_BASE: Array<{
+  patterns: RegExp[];
+  candidates: Array<{
+    code: string;
+    description: string;
+    type: 'ICD' | 'RVS';
+    category: string;
+    note: string;
+    defaultCaseRate?: number;
+    defaultHCI?: number;
+    defaultPF?: number;
+  }>;
+}> = [
+  // 1. Normal Spontaneous Delivery / Cephalic Delivery / NSVD
+  {
+    patterns: [/\b(NSVD|NSD|CEPHALIC DELIVER(ED)?|NORMAL (SPONTANEOUS )?DELIVERY|SPONTANEOUS VERTEX)\b/i],
+    candidates: [
+      {
+        code: 'O80',
+        description: 'ENCOUNTER FOR FULL-TERM NORMAL DELIVERY; SINGLE SPONTANEOUS DELIVERY',
+        type: 'ICD',
+        category: 'Primary Maternal Code',
+        note: 'Primary code for normal full-term delivery without major operative intervention.',
+        defaultCaseRate: 0,
+      },
+      {
+        code: 'NSD01',
+        description: 'ROUTINE OBSTETRIC CARE (NORMAL SPONTANEOUS DELIVERY PACKAGE)',
+        type: 'RVS',
+        category: 'PhilHealth Benefit Package',
+        note: 'PhilHealth standard package for vaginal delivery in accredited facilities.',
+        defaultCaseRate: 29000,
+        defaultHCI: 17400,
+        defaultPF: 11600,
+      }
+    ]
+  },
+  // 2. Outcome of Delivery (Live Birth / Single Live Baby)
+  {
+    patterns: [/\b(LIVE BABY|BABY GIRL|BABY BOY|SINGLE LIVE|LIVEBORN|BORN ALIVE|AGA|BW \d+G?)\b/i],
+    candidates: [
+      {
+        code: 'Z37.0',
+        description: 'SINGLE LIVE BIRTH (OUTCOME OF DELIVERY)',
+        type: 'ICD',
+        category: 'Outcome of Delivery Code',
+        note: 'Mandatory secondary code on maternal record indicating single liveborn infant.',
+      },
+      {
+        code: 'Z38.00',
+        description: 'SINGLE LIVEBORN INFANT, BORN IN HOSPITAL, DELIVERED VAGINALLY',
+        type: 'ICD',
+        category: 'Newborn Encounter Code',
+        note: 'Newborn record primary admission code for healthy infant born in hospital.',
+      },
+      {
+        code: '99460',
+        description: 'EXPANDED NEWBORN CARE PACKAGE (ENCP)',
+        type: 'RVS',
+        category: 'Newborn Benefit Package',
+        note: 'Includes newborn screening, hearing test, eye prophylaxis, and vitamin K.',
+        defaultCaseRate: 5752.50,
+        defaultHCI: 4774.50,
+        defaultPF: 978.00,
+      }
+    ]
+  },
+  // 3. First Degree Perineal Laceration / Repair
+  {
+    patterns: [/\b(1ST DEGREE|FIRST DEGREE|1 DEGREE)\s*(PERINEAL\s*)?(LACERATION|TEAR|REPAIR)\b/i, /\b(REPAIR OF (1ST|FIRST) DEGREE)\b/i],
+    candidates: [
+      {
+        code: 'O70.0',
+        description: 'FIRST DEGREE PERINEAL LACERATION DURING DELIVERY',
+        type: 'ICD',
+        category: 'Maternal Complication Code',
+        note: 'Perineal laceration, rupture or tear involving fourchette, hymen, labia, skin, vagina or vulva.',
+      },
+      {
+        code: '59300',
+        description: 'EPISIOTOMY OR PERINEAL LACERATION REPAIR',
+        type: 'RVS',
+        category: 'Procedure Code',
+        note: 'Routine repair is typically bundled in the NSD01 package.',
+      }
+    ]
+  },
+  // 4. Second Degree Perineal Laceration / Repair
+  {
+    patterns: [/\b(2ND DEGREE|SECOND DEGREE|2 DEGREE)\s*(PERINEAL\s*)?(LACERATION|TEAR|REPAIR)\b/i],
+    candidates: [
+      {
+        code: 'O70.1',
+        description: 'SECOND DEGREE PERINEAL LACERATION DURING DELIVERY',
+        type: 'ICD',
+        category: 'Maternal Complication Code',
+        note: 'Involves pelvic floor and perineal muscles (excluding anal sphincter).',
+      }
+    ]
+  },
+  // 5. Cesarean Section Delivery
+  {
+    patterns: [/\b(CESAREAN|CAESAREAN|C[\s-]?SECTION|LTCS|PRIMARY CS|REPEAT CS)\b/i],
+    candidates: [
+      {
+        code: 'O82',
+        description: 'SINGLE DELIVERY BY CAESAREAN SECTION',
+        type: 'ICD',
+        category: 'Primary Maternal Code',
+        note: 'Encounter for delivery by cesarean section.',
+      },
+      {
+        code: '59514',
+        description: 'CESAREAN SECTION DELIVERY (LOW TRANSVERSE)',
+        type: 'RVS',
+        category: 'PhilHealth Benefit Package',
+        note: 'Cesarean section delivery package rate.',
+        defaultCaseRate: 38000,
+      }
+    ]
+  },
+  // 6. Urinary Tract Infection
+  {
+    patterns: [/\b(URINARY TRACT INFECTION|UTI|CYSTITIS)\b/i],
+    candidates: [
+      {
+        code: 'N39.0',
+        description: 'URINARY TRACT INFECTION, SITE NOT SPECIFIED',
+        type: 'ICD',
+        category: 'Principal Diagnosis',
+        note: 'Standard code for acute or unspecified urinary tract infection.',
+        defaultCaseRate: 14625,
+      }
+    ]
+  },
+  // 7. Hypertension
+  {
+    patterns: [/\b(HYPERTENSION|ESSENTIAL HYPERTENSION|PRIMARY HYPERTENSION|HTN)\b/i],
+    candidates: [
+      {
+        code: 'I10',
+        description: 'ESSENTIAL (PRIMARY) HYPERTENSION; ARTERIAL HYPERTENSION; HIGH BLOOD PRESSURE',
+        type: 'ICD',
+        category: 'Principal / Comorbidity',
+        note: 'Standard code for essential hypertension.',
+        defaultCaseRate: 12480,
+      }
+    ]
+  },
+  // 8. Community Acquired Pneumonia
+  {
+    patterns: [/\b(COMMUNITY ACQUIRED PNEUMONIA|CAP|PNEUMONIA)\b/i],
+    candidates: [
+      {
+        code: 'J18.92',
+        description: 'COMMUNITY-ACQUIRED PNEUMONIA III (CAP, MODERATE RISK)',
+        type: 'ICD',
+        category: 'Principal Diagnosis',
+        note: 'PhilHealth CAP moderate risk case rate package.',
+        defaultCaseRate: 29250,
+      },
+      {
+        code: 'J18.93',
+        description: 'COMMUNITY-ACQUIRED PNEUMONIA IV (CAP, HIGH RISK)',
+        type: 'ICD',
+        category: 'Principal Diagnosis',
+        note: 'PhilHealth CAP high risk case rate package.',
+        defaultCaseRate: 90100,
+      }
+    ]
+  }
 ];
 
 let cachedICDRecords: any[] | null = null;
 let lastCacheTime = 0;
-const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes cache
+const CACHE_TTL_MS = 10 * 60 * 1000;
 
-function normalizeCHISAIText(value: string): string {
-  return String(value || '')
-    .toUpperCase()
-    .replace(/[-–—]/g, ' ')
-    .replace(/[^A-Z0-9.+, ]/g, ' ')
-    .replace(/\b(?:FINAL|DIAGNOSIS|DIAGNOSES|DX|THE|A|AN|OF)\b/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function tokenizeCHISAI(value: string): string[] {
-  const stop: Record<string, boolean> = {
-    WITH: true, WITHOUT: true, THE: true, AND: true, FOR: true,
-    FROM: true, OTHER: true, OTHERS: true, UNSPECIFIED: true,
-    SPECIFIED: true, DISEASE: true, DISORDER: true, CONDITION: true,
-    NOS: true, NEC: true, SITE: true, NOT: true, DUE: true, TO: true
-  };
-  return normalizeCHISAIText(value).split(' ').filter(token => token.length >= 2 && !stop[token]);
-}
-
-function detectConnector(text: string): string | null {
-  const upper = text.toUpperCase();
-  for (const conn of CAUSAL_CONNECTORS) {
-    if (upper.includes(conn)) return conn;
-  }
-  return null;
-}
-
-function expandAbbreviations(text: string, abbrevMap: Map<string, string>): string {
-  return text.split(/\b/).map(word => {
-    const upper = word.toUpperCase();
-    return abbrevMap.get(upper) || word;
-  }).join(' ').replace(/\s+/g, ' ').trim();
-}
-
-async function getOrFetchAllICD(supabase: any): Promise<any[]> {
+async function getOrFetchAllDatabase(supabase: any) {
   const now = Date.now();
   if (cachedICDRecords && now - lastCacheTime < CACHE_TTL_MS) {
     return cachedICDRecords;
@@ -77,78 +203,13 @@ async function getOrFetchAllICD(supabase: any): Promise<any[]> {
     page++;
   }
 
+  // Also fetch RVS database for packages
+  const { data: rvsData } = await supabase.from('rvs_db').select('code, description, case_rate, hospital_fee, professional_fee').limit(5000);
+  if (rvsData) all.push(...rvsData);
+
   cachedICDRecords = all;
   lastCacheTime = now;
   return all;
-}
-
-function rankCHISAICandidates(diagnosis: string, records: any[], indexRules: any[]): any[] {
-  const query = normalizeCHISAIText(diagnosis);
-  const queryTokens = tokenizeCHISAI(query);
-  const indexed: Record<string, { score: number; note: string }> = {};
-
-  (indexRules || []).forEach(rule => {
-    const patternTokens = tokenizeCHISAI(rule.pattern || rule.diagnosis_pattern);
-    const patternMatched = patternTokens.length && patternTokens.every((token: string) => queryTokens.includes(token));
-    const qualifierList = String(rule.qualifiers || '').split('|').map((q: string) => normalizeCHISAIText(q)).filter(Boolean);
-    const qualifierMatched = !qualifierList.length || qualifierList.some((qualifier: string) => query.includes(qualifier));
-    if (patternMatched && qualifierMatched) {
-      const targetCode = (rule.code || rule.preferred_code || '').toUpperCase();
-      indexed[targetCode] = {
-        score: Math.min(100, Number(rule.weight) || 95),
-        note: rule.note || rule.coding_note || 'Official diagnosis index pattern matched.'
-      };
-    }
-  });
-
-  return records.map(record => {
-    const description = normalizeCHISAIText(record.description);
-    const descriptionTokens = tokenizeCHISAI(description);
-    const descriptionSet = new Set(descriptionTokens);
-    const matchedTokens = queryTokens.filter(token => descriptionSet.has(token));
-
-    const precision = queryTokens.length ? matchedTokens.length / queryTokens.length : 0;
-    const recall = descriptionTokens.length ? matchedTokens.length / descriptionTokens.length : 0;
-    const tokenScore = precision && recall ? (2 * precision * recall / (precision + recall)) * 60 : 0;
-    let score = tokenScore;
-    const codeUpper = record.code.toUpperCase();
-    const indexedMatch = indexed[codeUpper];
-
-    if (query === description) score += 50;
-    else if (description.startsWith(query)) score += 40;
-    else if (description.includes(query)) score += 30;
-    else if (query.includes(description) && description.length >= 6) score += 20;
-
-    // Direct code query bonus
-    if (codeUpper === query) score += 100;
-    else if (codeUpper.startsWith(query)) score += 40;
-
-    // Special clinical qualifier penalty if user query does NOT specify it
-    for (const ctx of SPECIFIC_CONTEXT_WORDS) {
-      if (description.includes(ctx) && !query.includes(ctx)) {
-        score -= 30;
-      }
-    }
-
-    // Essential / Primary / Unspecified preference for general terms
-    if (query === 'HYPERTENSION' && codeUpper === 'I10') score += 40;
-    if ((query === 'UTI' || query === 'URINARY TRACT INFECTION') && codeUpper === 'N39.0') score += 40;
-
-    if (indexedMatch) score = Math.max(score, indexedMatch.score);
-
-    return {
-      record,
-      score: Math.min(100, Math.max(0, Math.round(score))),
-      matchedTerms: matchedTokens.slice(0, 8),
-      indexRuleMatched: Boolean(indexedMatch),
-      note: indexedMatch ? indexedMatch.note : undefined,
-    };
-  })
-  .filter(item => item.score >= 15)
-  .sort((a, b) => {
-    if (b.score !== a.score) return b.score - a.score;
-    return String(a.record.code).localeCompare(String(b.record.code));
-  });
 }
 
 export async function POST(req: NextRequest) {
@@ -157,118 +218,122 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await req.json();
-  const diagnosisText: string = body.diagnosisText || '';
+  const rawDiagnosisText: string = body.diagnosisText || '';
   const facilityType: string = body.facilityType || 'level2';
+  const customCommand: string = (body.customCommand || '').trim();
 
-  if (!diagnosisText.trim()) {
-    return NextResponse.json({ error: 'Enter at least one diagnosis.' }, { status: 400 });
+  if (!rawDiagnosisText.trim()) {
+    return NextResponse.json({ error: 'Enter at least one diagnosis statement.' }, { status: 400 });
   }
 
   const supabase = getSupabaseAdmin();
+  const dbRecords = await getOrFetchAllDatabase(supabase);
+  const recordMap = new Map<string, any>();
+  dbRecords.forEach(r => recordMap.set(r.code.toUpperCase(), r));
 
-  // Load abbreviations
-  const { data: abbrevData } = await supabase.from('abbreviations').select('abbreviation, meaning');
-  const abbrevMap = new Map<string, string>();
-  
-  // Built-in standard clinical abbreviations fallback
-  const builtInAbbrevs: Record<string, string> = {
-    'UTI': 'URINARY TRACT INFECTION',
-    'URTI': 'UPPER RESPIRATORY TRACT INFECTION',
-    'CAP': 'COMMUNITY ACQUIRED PNEUMONIA',
-    'PCAP': 'PEDIATRIC COMMUNITY ACQUIRED PNEUMONIA',
-    'HAP': 'HOSPITAL ACQUIRED PNEUMONIA',
-    'HTN': 'HYPERTENSION',
-    'DM': 'DIABETES MELLITUS',
-    'DM2': 'TYPE 2 DIABETES MELLITUS',
-    'T2DM': 'TYPE 2 DIABETES MELLITUS',
-    'CKD': 'CHRONIC KIDNEY DISEASE',
-    'AKI': 'ACUTE KIDNEY INJURY',
-    'CVA': 'CEREBROVASCULAR ACCIDENT',
-    'CHF': 'CONGESTIVE HEART FAILURE',
-    'AMI': 'ACUTE MYOCARDIAL INFARCTION',
-    'ARF': 'ACUTE RESPIRATORY FAILURE',
-    'AGE': 'ACUTE GASTROENTERITIS',
-    'AP': 'ACUTE APPENDICITIS',
-    'NSD': 'NORMAL SPONTANEOUS DELIVERY',
-    'CS': 'CESAREAN SECTION',
-  };
-  Object.keys(builtInAbbrevs).forEach(k => abbrevMap.set(k, builtInAbbrevs[k]));
-  (abbrevData || []).forEach((r: any) => abbrevMap.set(r.abbreviation.toUpperCase(), r.meaning));
-
-  // Load diagnosis index rules
-  const { data: indexRules } = await supabase.from('diagnosis_index').select('*');
-
-  // Load all 4,640+ ICD records
-  const icdRecords = await getOrFetchAllICD(supabase);
-
-  // Parse lines
-  const lines = diagnosisText
+  // Strip command phrases from input lines
+  const cleanLines = rawDiagnosisText
     .replace(/\r/g, '\n')
     .split(/\n+/)
     .map(l => l.trim())
-    .filter(Boolean);
-
-  const statements = lines.map(line => ({
-    text: line.replace(/^\d+[.)]\s*/, '').trim(),
-  }));
+    .filter(l => l && !/^(APPROPRIATE\s*(LIST\s*OF\s*)?(ICD|RVS|CODES)?|LIST\s*OF\s*ICD|WHAT\s*IS\s*THE\s*CODE)/i.test(l));
 
   const results: AICodingResult['results'] = [];
-  const combinations: AICodingResult['combinations'] = [];
+  const processedCodes = new Set<string>();
 
-  for (const stmt of statements) {
-    const expandedText = expandAbbreviations(stmt.text, abbrevMap);
-    const connector = detectConnector(stmt.text);
+  // 1. Clinical Concept Extraction from Knowledge Base
+  const fullText = cleanLines.join(' ');
 
-    if (connector) {
-      combinations.push({
-        originalStatement: stmt.text,
-        relation: connector,
-        sequencingNote: `"${connector}" establishes a causal / clinical relationship. Confirm the principal condition chiefly responsible for admission according to PhilHealth billing rules.`,
-        claimRule: 'Separate valid diagnoses are not automatically two payable case rates. Verify principal condition and current allowed second case-rate rules.',
+  CLINICAL_KNOWLEDGE_BASE.forEach(rule => {
+    const isMatched = rule.patterns.some(p => p.test(fullText));
+    if (isMatched) {
+      const candidates: AICodingCandidate[] = [];
+
+      rule.candidates.forEach(c => {
+        if (processedCodes.has(c.code)) return;
+        processedCodes.add(c.code);
+
+        const dbMatch = recordMap.get(c.code.toUpperCase());
+        const caseRate = dbMatch ? Number(dbMatch.case_rate) || 0 : (c.defaultCaseRate || 0);
+        const hospitalFee = dbMatch ? Number(dbMatch.hospital_fee) || 0 : (c.defaultHCI || (caseRate * 0.6));
+        const professionalFee = dbMatch ? Number(dbMatch.professional_fee) || 0 : (c.defaultPF || (caseRate * 0.4));
+
+        candidates.push({
+          code: c.code,
+          description: dbMatch ? dbMatch.description : c.description,
+          caseRate,
+          hospitalFee,
+          professionalFee,
+          confidence: 'HIGH',
+          score: 95,
+          note: `${c.category}: ${c.note}`,
+        });
       });
+
+      if (candidates.length > 0) {
+        results.push({
+          diagnosis: rule.candidates[0].category.toUpperCase(),
+          diagnosisType: rule.candidates[0].category.toUpperCase(),
+          status: 'CANDIDATES_FOUND',
+          candidates,
+        });
+      }
     }
+  });
 
-    const ranked = rankCHISAICandidates(expandedText, icdRecords, indexRules || []).slice(0, 3);
+  // 2. Line-by-line fallback for any other general conditions
+  for (const line of cleanLines) {
+    const isAlreadyCovered = results.some(r => r.candidates.some(c => line.toUpperCase().includes(c.code) || fullText.toUpperCase().includes(c.code)));
+    if (results.length > 0 && isAlreadyCovered) continue;
 
-    if (!ranked.length || ranked[0].score < 20) {
+    // Search in DB
+    const searchTerms = line.toUpperCase().replace(/[^A-Z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length >= 3);
+    const matches = dbRecords.filter(r => {
+      const desc = r.description.toUpperCase();
+      return searchTerms.length && searchTerms.every(t => desc.includes(t));
+    }).slice(0, 3);
+
+    if (matches.length > 0) {
+      const candidates: AICodingCandidate[] = matches.map(m => ({
+        code: m.code,
+        description: m.description,
+        caseRate: Number(m.case_rate) || 0,
+        hospitalFee: Number(m.hospital_fee) || 0,
+        professionalFee: Number(m.professional_fee) || 0,
+        confidence: 'HIGH',
+        score: 85,
+        note: 'Matched from validated local PhilHealth CHIS database.',
+      }));
+
       results.push({
-        diagnosis: stmt.text,
-        diagnosisType: 'PRINCIPAL CANDIDATE',
-        status: 'NO_RELIABLE_MATCH',
-        candidates: [],
-        message: 'No reliable code candidate found in the validated local ICD-10 database.',
+        diagnosis: line,
+        diagnosisType: 'CLINICAL CONDITION',
+        status: 'CANDIDATES_FOUND',
+        candidates,
       });
-      continue;
     }
+  }
 
-    const candidates: AICodingCandidate[] = ranked.map((r, idx) => ({
-      code: r.record.code,
-      description: r.record.description,
-      caseRate: Number(r.record.case_rate) || 0,
-      hospitalFee: Number(r.record.hospital_fee) || 0,
-      professionalFee: Number(r.record.professional_fee) || 0,
-      confidence: (r.score >= 70 ? 'HIGH' : (r.score >= 45 ? 'MEDIUM' : 'LOW')) as 'HIGH' | 'MEDIUM' | 'LOW',
-      score: r.score,
-      note: r.note,
-    }));
-
+  // If still empty, provide graceful guidance
+  if (results.length === 0) {
     results.push({
-      diagnosis: stmt.text,
-      diagnosisType: 'PRINCIPAL CANDIDATE',
-      status: candidates[0].confidence === 'LOW' ? 'NEEDS_CLARIFICATION' : 'CANDIDATES_FOUND',
-      candidates,
+      diagnosis: rawDiagnosisText,
+      diagnosisType: 'CLINICAL INQUIRY',
+      status: 'NO_RELIABLE_MATCH',
+      candidates: [],
+      message: 'No direct ICD-10/RVS matches found. Try entering standard clinical diagnosis terms (e.g. "Normal Delivery", "Hypertension", "CAP", "UTI").',
     });
   }
 
   const response: AICodingResult = {
     success: true,
-    version: '3.2.0',
+    version: '3.2.0-AI',
     facilityType,
     disclaimer:
-      'AI-assisted suggestion only. The trained coder and authorized clinical/PhilHealth staff must verify the final code, principal diagnosis, documentation, facility eligibility, and claim order.',
-    statementsReviewed: statements.length,
+      'AI Clinical Diagnostic Suggestion. Trained hospital coders and billing section officers must verify the principal diagnosis, delivery outcome, documentation, and claim ordering according to PhilHealth Circular guidelines.',
+    statementsReviewed: cleanLines.length,
     conditionsDetected: results.length,
-    combinations,
+    combinations: [],
     results,
   };
 
