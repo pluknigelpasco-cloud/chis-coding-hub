@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { getTokenFromRequest, verifyToken } from '@/lib/auth';
+import { fetchLiveCRS } from '@/lib/crs-parser';
 
 export async function GET(req: NextRequest) {
   const token = getTokenFromRequest(req);
@@ -32,6 +33,10 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // Track which tokens found at least 1 local match
+  const tokenMatchedCount = new Map<string, number>();
+  searchTokens.forEach(t => tokenMatchedCount.set(t.toUpperCase(), 0));
+
   // 1. First search exact code matches for each token so they are guaranteed to appear first
   for (const token of searchTokens) {
     const cleanToken = token.replace(/[^A-Z0-9.]/gi, '');
@@ -49,6 +54,7 @@ export async function GET(req: NextRequest) {
       const key = `ICD-${row.code}`;
       if (!seenCodes.has(key)) {
         seenCodes.add(key);
+        tokenMatchedCount.set(token.toUpperCase(), (tokenMatchedCount.get(token.toUpperCase()) || 0) + 1);
         results.push({
           code: row.code,
           description: row.description,
@@ -75,6 +81,7 @@ export async function GET(req: NextRequest) {
       const key = `RVS-${row.code}`;
       if (!seenCodes.has(key)) {
         seenCodes.add(key);
+        tokenMatchedCount.set(token.toUpperCase(), (tokenMatchedCount.get(token.toUpperCase()) || 0) + 1);
         results.push({
           code: row.code,
           description: row.description,
@@ -107,6 +114,7 @@ export async function GET(req: NextRequest) {
         const key = `${recordType}-${row.code}`;
         if (!seenCodes.has(key)) {
           seenCodes.add(key);
+          tokenMatchedCount.set(token.toUpperCase(), (tokenMatchedCount.get(token.toUpperCase()) || 0) + 1);
           results.push({
             code: row.code,
             description: row.description,
@@ -126,6 +134,67 @@ export async function GET(req: NextRequest) {
       searchTable('icd10_db', 'ICD'),
       searchTable('rvs_db', 'RVS'),
     ]);
+  }
+
+  // 3. AUTOMATIC REAL-TIME PHILHEALTH CRS FALLBACK & SYNC
+  // If any search token had 0 matches in local database, fetch directly from live PhilHealth CRS server!
+  for (const token of searchTokens) {
+    const matchedCount = tokenMatchedCount.get(token.toUpperCase()) || 0;
+    if (matchedCount === 0 && token.length >= 2) {
+      try {
+        const liveRecords = await fetchLiveCRS(token);
+        if (liveRecords && liveRecords.length > 0) {
+          // Group by unique code and pick the current/latest active rate
+          const codeMap = new Map<string, any>();
+          liveRecords.forEach(r => {
+            const existing = codeMap.get(r.code);
+            if (!existing || r.isCurrent) {
+              codeMap.set(r.code, r);
+            }
+          });
+
+          for (const liveRec of Array.from(codeMap.values())) {
+            const isICD = /^[A-Z]\d{2}/i.test(liveRec.code);
+            const recordType: 'ICD' | 'RVS' = isICD ? 'ICD' : 'RVS';
+            const key = `${recordType}-${liveRec.code}`;
+
+            if (!seenCodes.has(key)) {
+              seenCodes.add(key);
+              results.push({
+                code: liveRec.code,
+                description: liveRec.description,
+                case_rate: liveRec.firstCaseRate.caseRate,
+                hospital_fee: liveRec.firstCaseRate.hospitalFee,
+                professional_fee: liveRec.firstCaseRate.professionalFee,
+                effectivity_date: liveRec.effectivity,
+                type: recordType,
+                isExactMatch: liveRec.code.toUpperCase() === token.toUpperCase(),
+                matchedToken: token.toUpperCase(),
+                source: 'LIVE_CRS',
+              });
+
+              // Asynchronously upsert to Supabase database so future searches are instant
+              supabase
+                .from(isICD ? 'icd10_db' : 'rvs_db')
+                .upsert(
+                  {
+                    code: liveRec.code,
+                    description: liveRec.description,
+                    case_rate: liveRec.firstCaseRate.caseRate,
+                    hospital_fee: liveRec.firstCaseRate.hospitalFee,
+                    professional_fee: liveRec.firstCaseRate.professionalFee,
+                    effectivity_date: liveRec.effectivity,
+                  },
+                  { onConflict: 'code' }
+                )
+                .then(() => {});
+            }
+          }
+        }
+      } catch (err: any) {
+        console.warn(`Auto-CRS fallback error for "${token}":`, err.message);
+      }
+    }
   }
 
   // Sort: Exact matches first, in order of searchTokens!
