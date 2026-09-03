@@ -13,17 +13,17 @@ export async function GET(req: NextRequest) {
   const type = searchParams.get('type') || 'ALL'; // ICD, RVS, ALL
   const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
 
-  if (!rawQ) return NextResponse.json({ results: [] });
+  if (!rawQ || rawQ.length < 2) return NextResponse.json({ results: [] });
 
   const supabase = getSupabaseAdmin();
   const results: any[] = [];
   const seenCodes = new Set<string>();
 
-  // Split multiple search terms if user entered e.g. "P03.4, 99460" or "P03.4 + 99460" or "P03.4 and 99460"
+  // Split multiple search terms if user entered e.g. "P03.4, 99460" or "P03.4 + 99460"
   const rawTerms = rawQ
     .split(/[,+&/|]|\s+\band\b\s+/i)
     .map(t => t.trim())
-    .filter(t => t.length > 0);
+    .filter(t => t.length >= 2);
 
   let searchTokens = rawTerms;
   if (rawTerms.length === 1 && /\s+/.test(rawTerms[0])) {
@@ -37,10 +37,10 @@ export async function GET(req: NextRequest) {
   const tokenMatchedCount = new Map<string, number>();
   searchTokens.forEach(t => tokenMatchedCount.set(t.toUpperCase(), 0));
 
-  // 1. First search exact code matches for each token so they are guaranteed to appear first
+  // 1. First search EXACT code matches for each token so they appear at the very top
   for (const token of searchTokens) {
     const cleanToken = token.replace(/[^A-Z0-9.]/gi, '');
-    if (!cleanToken) continue;
+    if (!cleanToken || cleanToken.length < 2) continue;
 
     // Check exact in ICD
     const { data: icdExact } = await supabase
@@ -99,6 +99,8 @@ export async function GET(req: NextRequest) {
 
   // 2. Then search prefix / partial / description matches
   for (const token of searchTokens) {
+    if (token.length < 2) continue;
+
     async function searchTable(table: 'icd10_db' | 'rvs_db', recordType: 'ICD' | 'RVS') {
       if (type !== 'ALL' && type !== recordType) return;
 
@@ -106,7 +108,7 @@ export async function GET(req: NextRequest) {
         .from(table)
         .select('*')
         .or(`code.ilike.%${token}%,description.ilike.%${token}%`)
-        .limit(20);
+        .limit(15);
 
       if (error || !data) return;
 
@@ -203,13 +205,13 @@ export async function GET(req: NextRequest) {
     const aCode = a.code.toUpperCase();
     const bCode = b.code.toUpperCase();
 
-    const aTokenIdx = upperTokens.findIndex(t => aCode === t);
-    const bTokenIdx = upperTokens.findIndex(t => bCode === t);
+    const aExactIdx = upperTokens.findIndex(t => aCode === t);
+    const bExactIdx = upperTokens.findIndex(t => bCode === t);
 
-    // If both are exact matches, maintain token query order!
-    if (aTokenIdx !== -1 && bTokenIdx !== -1) return aTokenIdx - bTokenIdx;
-    if (aTokenIdx !== -1) return -1;
-    if (bTokenIdx !== -1) return 1;
+    // If both are exact matches, maintain query token order!
+    if (aExactIdx !== -1 && bExactIdx !== -1) return aExactIdx - bExactIdx;
+    if (aExactIdx !== -1) return -1;
+    if (bExactIdx !== -1) return 1;
 
     // Prefix matches next
     const aPrefix = upperTokens.some(t => aCode.startsWith(t));
