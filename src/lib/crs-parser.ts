@@ -37,33 +37,45 @@ export async function fetchLiveCRS(query: string): Promise<CRSRecord[]> {
   const cleanQ = query.trim();
   if (cleanQ.length < 2) return [];
 
-  const isRVS = /^\d{4,5}$/.test(cleanQ);
-  const isICD = /^[A-Z]\d{2}/i.test(cleanQ);
+  const isICD = /^[A-Z]\d{2}(\.\d{1,4})?$/i.test(cleanQ);
+  const isRVS = /^\d{4,5}$/.test(cleanQ) || /^[A-Z]{2,4}\d{2}[A-Z0-9]*$/i.test(cleanQ);
 
-  const params = new URLSearchParams();
-  params.append('pDescription', isRVS || isICD ? '' : cleanQ);
-  params.append('pICD', isICD ? cleanQ.toUpperCase() : '');
-  params.append('pRVS', isRVS ? cleanQ : '');
-  params.append('search', 'Search');
-
-  try {
-    const res = await fetch('https://crs.philhealth.gov.ph/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      },
-      body: params.toString(),
-      signal: AbortSignal.timeout(8000), // 8s timeout
-    });
-
-    if (!res.ok) return [];
-    const html = await res.text();
-    return parseCRSSections(html, cleanQ);
-  } catch (err: any) {
-    console.warn('CRS fetch skipped:', err.message);
-    return [];
+  const attempts: { pDescription: string; pICD: string; pRVS: string }[] = [];
+  if (isICD) {
+    attempts.push({ pDescription: '', pICD: cleanQ.toUpperCase(), pRVS: '' });
+    attempts.push({ pDescription: cleanQ, pICD: '', pRVS: '' });
+  } else if (isRVS) {
+    attempts.push({ pDescription: '', pICD: '', pRVS: cleanQ.toUpperCase() });
+    attempts.push({ pDescription: cleanQ, pICD: '', pRVS: '' });
+  } else {
+    attempts.push({ pDescription: cleanQ, pICD: '', pRVS: '' });
+    attempts.push({ pDescription: '', pICD: '', pRVS: cleanQ.toUpperCase() });
   }
+
+  for (const att of attempts) {
+    const params = new URLSearchParams({ ...att, search: 'Search' });
+    try {
+      const res = await fetch('https://crs.philhealth.gov.ph/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        },
+        body: params.toString(),
+        signal: AbortSignal.timeout(8000),
+      });
+
+      if (!res.ok) continue;
+      const html = await res.text();
+      const records = parseCRSSections(html, cleanQ);
+      if (records.length > 0) return records;
+    } catch (err: any) {
+      console.warn(`CRS fetch attempt failed for "${cleanQ}":`, err.message);
+    }
+  }
+
+  return [];
 }
 
 function cleanText(text: string): string {
@@ -96,6 +108,16 @@ function parseCRSSections(html: string, query: string): CRSRecord[] {
     });
   }
 
+  const altRegex = /EFFECTIVITY\s*Date:\s*([^\n<]+)/gi;
+  let altMatch: RegExpExecArray | null;
+  while ((altMatch = altRegex.exec(html)) !== null) {
+    const curMatch = altMatch;
+    if (!markers.some(m => Math.abs(m.index - curMatch.index) < 50)) {
+      markers.push({ index: curMatch.index, effectivity: cleanText(curMatch[1]) });
+    }
+  }
+
+  markers.sort((a, b) => a.index - b.index);
   if (!markers.length) return [];
 
   const sections: { effectivity: string; html: string }[] = [];
@@ -121,7 +143,7 @@ function parseCRSSections(html: string, query: string): CRSRecord[] {
       const code = cleanText(rowMatch[1]).toUpperCase().replace(/\s+/g, '').replace(/[＊﹡]/g, '*');
       const description = cleanText(rowMatch[2]);
 
-      const isRecognizedCode = /^(?:[A-Z][0-9]{2}(?:\.[0-9A-Z]{1,4})?[*†‡]?|[0-9]{4,5}|[A-Z][A-Z0-9]{2,9})$/i.test(code);
+      const isRecognizedCode = /^(?:[A-Z][0-9]{2}(?:\.[0-9A-Z]{1,4})?[*†‡]?|[0-9]{4,5}|[A-Z0-9]{3,12})$/i.test(code);
       if (!code || !description || !isRecognizedCode) continue;
 
       const recordStart = rowMatch.index;
@@ -178,3 +200,4 @@ function parseCRSSections(html: string, query: string): CRSRecord[] {
 
   return results;
 }
+
