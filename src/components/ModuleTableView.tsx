@@ -362,9 +362,9 @@ export default function ModuleTableView({
                   </th>
                 )}
                 {isNoticeModule && (
-                  <th className="py-3.5 px-4">
+                  <th className="py-3.5 px-4 min-w-[240px]">
                     <button onClick={() => toggleSort('patientName')} className="flex items-center gap-1">
-                      Patient Name
+                      Patient Name / Deficiency
                       <ArrowUpDown className="w-3 h-3 text-slate-400" />
                     </button>
                   </th>
@@ -440,8 +440,14 @@ export default function ModuleTableView({
                         </td>
                       )}
                       {isNoticeModule && (
-                        <td className="py-3 px-4 font-semibold text-slate-800">
-                          {r.patientName}
+                        <td className="py-3 px-4 min-w-[240px] max-w-[320px]">
+                          <div className="font-semibold text-slate-800">{r.patientName}</div>
+                          {r.deficiency ? (
+                            <p className="mt-1 text-[10px] text-slate-500 leading-snug line-clamp-3 border-t border-slate-100 pt-1" title={r.deficiency}>
+                              <span className="font-black text-slate-400 uppercase tracking-wide">Deficiency: </span>
+                              {r.deficiency}
+                            </p>
+                          ) : null}
                         </td>
                       )}
                       {isNoticeModule && (
