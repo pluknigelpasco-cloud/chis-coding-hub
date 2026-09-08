@@ -77,6 +77,7 @@ export default function PrintNoticeModal({ records, onClose }: PrintNoticeModalP
                 <tr className="border-b-2 border-slate-900 text-[10px] uppercase font-black bg-slate-50 print:bg-transparent">
                   <th className="py-2.5 px-3 w-10">No.</th>
                   <th className="py-2.5 px-3">Series Number</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap">Date Claim Received</th>
                   <th className="py-2.5 px-3">Patient Name</th>
                   <th className="py-2.5 px-3">Cat</th>
                   <th className="py-2.5 px-3 whitespace-nowrap">Confinement</th>
@@ -91,6 +92,7 @@ export default function PrintNoticeModal({ records, onClose }: PrintNoticeModalP
                   <tr key={r.id || i} className="align-top">
                     <td className="py-2 px-3 font-bold text-slate-500">{i + 1}</td>
                     <td className="py-2 px-3 font-black text-slate-900 whitespace-nowrap">{r.reference}</td>
+                    <td className="py-2 px-3 text-slate-700 whitespace-nowrap">{r.claimReceivedDate || '—'}</td>
                     <td className="py-2 px-3 font-bold text-slate-800">{r.patientName}</td>
                     <td className="py-2 px-3 font-semibold text-slate-600">{r.memberCategory}</td>
                     <td className="py-2 px-3 whitespace-nowrap text-slate-700">
@@ -107,7 +109,7 @@ export default function PrintNoticeModal({ records, onClose }: PrintNoticeModalP
               </tbody>
               <tfoot>
                 <tr className="border-t-2 border-slate-900 font-black text-xs bg-slate-50/80 print:bg-transparent">
-                  <td colSpan={5} className="py-3 px-3 uppercase text-right">
+                  <td colSpan={6} className="py-3 px-3 uppercase text-right">
                     Total Amount ({records.length} claim{records.length > 1 ? 's' : ''}):
                   </td>
                   <td className="py-3 px-3 text-right text-sm">₱{formatCurrency(totalAmount)}</td>

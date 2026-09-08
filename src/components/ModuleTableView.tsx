@@ -369,6 +369,15 @@ export default function ModuleTableView({
                     </button>
                   </th>
                 )}
+                {isNoticeModule && (
+                  <th className="py-3.5 px-4 whitespace-nowrap">
+                    <button onClick={() => toggleSort('claimReceivedDate')} className="flex items-center gap-1">
+                      Date Claim Received
+                      <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                    </button>
+                  </th>
+                )}
+                {isNoticeModule && <th className="py-3.5 px-4 whitespace-nowrap">Confinement</th>}
                 {isNoticeModule && <th className="py-3.5 px-4 text-right">Claim Amount</th>}
                 <th className="py-3.5 px-4">
                   <button onClick={() => toggleSort('expiryDate')} className="flex items-center gap-1">
@@ -448,6 +457,18 @@ export default function ModuleTableView({
                               {r.deficiency}
                             </p>
                           ) : null}
+                        </td>
+                      )}
+                      {isNoticeModule && (
+                        <td className="py-3 px-4 whitespace-nowrap text-slate-700 font-medium">
+                          {r.claimReceivedDate || '—'}
+                        </td>
+                      )}
+                      {isNoticeModule && (
+                        <td className="py-3 px-4 whitespace-nowrap text-slate-700 font-medium">
+                          {r.admittedDate && r.dischargedDate
+                            ? `${r.admittedDate} – ${r.dischargedDate}`
+                            : r.admittedDate || '—'}
                         </td>
                       )}
                       {isNoticeModule && (
