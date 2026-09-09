@@ -3,9 +3,10 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Search, Star, StarOff, Clock, Trash2, X, Calendar, ExternalLink,
   Activity, CheckCircle2, ShieldCheck, Layers, LayoutGrid, Table as TableIcon,
-  Sparkles, ArrowRight, Building2, User, Check, XCircle, Tag
+  Sparkles, ArrowRight, Building2, User, Check, XCircle, Tag, RefreshCw, Zap, DownloadCloud
 } from 'lucide-react';
 import { CHISRecord, Favorite } from '@/lib/types';
+import { useToast } from './Toast';
 
 type TabKey = 'SEARCH' | 'FAVORITES' | 'HISTORY';
 
@@ -93,11 +94,13 @@ function ResultCard({
   isFav,
   onToggleFav,
   onOpenCRS,
+  onSyncCRS,
 }: {
   record: CHISRecord;
   isFav: boolean;
   onToggleFav: (r: CHISRecord) => void;
   onOpenCRS: (code: string) => void;
+  onSyncCRS?: (code: string) => void;
 }) {
   const secondApplicable = isSecondCaseRateAllowed(record.type, record.code, record.description);
   const secondRate = secondApplicable ? record.case_rate : 0;
@@ -207,7 +210,7 @@ function ResultCard({
           )}
         </div>
 
-        {/* Facility Accreditation Badges */}
+        {/* Facility Accreditation Badges & Sync Button */}
         <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1 flex-wrap">
             <span className="text-[10px] font-black uppercase text-slate-400 mr-1">Facilities:</span>
@@ -218,22 +221,23 @@ function ResultCard({
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            {onSyncCRS && (
+              <button
+                onClick={() => onSyncCRS(record.code)}
+                title="Fetch and update latest active rate directly from PhilHealth CRS"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-black transition-all cursor-pointer"
+              >
+                <Zap className="w-3.5 h-3.5 text-amber-600 fill-current" />
+                <span>Sync Live</span>
+              </button>
+            )}
             <button
               onClick={() => onOpenCRS(record.code)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-xs transition-all"
             >
               <Activity className="w-3.5 h-3.5" />
-              <span>CRS Timeline</span>
+              <span>Timeline</span>
             </button>
-            <a
-              href="https://www.philhealth.gov.ph/services/acr/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-blue-600 font-bold"
-            >
-              <span>Portal</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
           </div>
         </div>
       </div>
@@ -247,11 +251,13 @@ function ResultTableRow({
   isFav,
   onToggleFav,
   onOpenCRS,
+  onSyncCRS,
 }: {
   record: CHISRecord;
   isFav: boolean;
   onToggleFav: (r: CHISRecord) => void;
   onOpenCRS: (code: string) => void;
+  onSyncCRS?: (code: string) => void;
 }) {
   const secondApplicable = isSecondCaseRateAllowed(record.type, record.code, record.description);
 
@@ -270,12 +276,22 @@ function ResultTableRow({
       <td className="px-4 py-3.5 text-sm text-slate-700 leading-snug align-top">
         <p className="font-bold text-slate-800 mb-1.5 text-sm sm:text-base">{record.description}</p>
         <div className="flex items-center gap-3">
+          {onSyncCRS && (
+            <button
+              onClick={() => onSyncCRS(record.code)}
+              className="inline-flex items-center gap-1 text-xs font-black text-amber-800 hover:text-amber-950 bg-amber-50 hover:bg-amber-100 border border-amber-300 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+              title="Sync latest active rate directly from PhilHealth CRS"
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-600 fill-current" />
+              <span>Sync Live CRS</span>
+            </button>
+          )}
           <button
             onClick={() => onOpenCRS(record.code)}
             className="inline-flex items-center gap-1 text-xs font-black text-indigo-700 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg transition-colors"
           >
             <Activity className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Live CRS Timeline</span>
+            <span>Timeline</span>
           </button>
           <a
             href="https://www.philhealth.gov.ph/services/acr/"
@@ -332,6 +348,7 @@ function ResultTableRow({
 }
 
 export default function CHISLookupView() {
+  const { toast } = useToast();
   const [tab, setTab] = useState<TabKey>('SEARCH');
   const [viewMode, setViewMode] = useState<'CARD' | 'TABLE'>('CARD');
   const [query, setQuery] = useState('');
@@ -339,6 +356,7 @@ export default function CHISLookupView() {
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [history, setHistory] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
+  const [syncingCRS, setSyncingCRS] = useState(false);
   const [favCodes, setFavCodes] = useState<Set<string>>(new Set());
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -380,6 +398,26 @@ export default function CHISLookupView() {
       setSearching(false);
     }
   }, []);
+
+  const forceSyncCRS = useCallback(async (qToSync?: string) => {
+    const target = (qToSync || query).trim();
+    if (!target) return;
+    setSyncingCRS(true);
+    try {
+      const res = await fetch(`/api/chis/search?q=${encodeURIComponent(target)}&forceSync=true`);
+      const data = await res.json();
+      if (data.results && data.results.length > 0) {
+        setResults(data.results);
+        toast(`✓ Successfully synced "${target}" directly from PhilHealth CRS! System updated.`);
+      } else {
+        toast(`No live records found on PhilHealth CRS for "${target}".`, true);
+      }
+    } catch (e: any) {
+      toast(e?.message || 'Failed to sync with PhilHealth CRS', true);
+    } finally {
+      setSyncingCRS(false);
+    }
+  }, [query, toast]);
 
   function handleQueryChange(val: string) {
     setQuery(val);
@@ -509,19 +547,34 @@ export default function CHISLookupView() {
           <div>
             {/* Search Input & Quick Dual Search Chips */}
             <div className="p-3 sm:p-4 border-b border-slate-100 bg-slate-50/50 space-y-2.5">
-              <div className="relative">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input
-                  autoFocus
-                  type="search"
-                  value={query}
-                  onChange={e => handleQueryChange(e.target.value)}
-                  placeholder="Search single or dual codes (e.g. P03.4, 99460 or NSD01 + 99460)..."
-                  className="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium shadow-xs"
-                />
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    autoFocus
+                    type="search"
+                    value={query}
+                    onChange={e => handleQueryChange(e.target.value)}
+                    placeholder="Search single or dual codes (e.g. 16010, P03.4, 99460 or OPH01B)..."
+                    className="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium shadow-xs"
+                  />
+                  {query && (
+                    <button onClick={() => { setQuery(''); setResults([]); }} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+
                 {query && (
-                  <button onClick={() => { setQuery(''); setResults([]); }} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                    <X className="w-4 h-4" />
+                  <button
+                    type="button"
+                    onClick={() => forceSyncCRS(query)}
+                    disabled={syncingCRS}
+                    title="Force fetch and update latest rates directly from live PhilHealth CRS"
+                    className="px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl text-xs font-black shadow-sm flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50 shrink-0"
+                  >
+                    <Zap className={`w-4 h-4 fill-current ${syncingCRS ? 'animate-spin' : ''}`} />
+                    <span>{syncingCRS ? 'Syncing...' : '⚡ Live PhilHealth Sync'}</span>
                   </button>
                 )}
               </div>
@@ -530,6 +583,7 @@ export default function CHISLookupView() {
               <div className="flex flex-wrap items-center gap-1.5 pt-1">
                 <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">Dual Search:</span>
                 {[
+                  { label: '16010 (Debridement 2025)', q: '16010' },
                   { label: 'P03.4 + 99460 (CS Newborn)', q: 'P03.4, 99460' },
                   { label: 'NSD01 + 99460 (Delivery)', q: 'NSD01, 99460' },
                   { label: '59514 + 99460 (CS + Newborn)', q: '59514, 99460' },
@@ -559,30 +613,59 @@ export default function CHISLookupView() {
                 </div>
               )}
 
-
-
               {!searching && query && results.length === 0 && (
-                <div className="p-10 text-center text-slate-500 text-sm bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                  <p className="font-semibold text-slate-700 mb-3">No local records found for <b>"{query}"</b>.</p>
-                  <button
-                    onClick={() => openLiveCRS(query)}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-black shadow-sm hover:bg-indigo-700 transition-all"
-                  >
-                    <Activity className="w-4 h-4" />
-                    Search Directly in Live PhilHealth CRS
-                  </button>
+                <div className="p-8 sm:p-10 text-center text-slate-500 text-sm bg-gradient-to-b from-amber-50/50 to-orange-50/30 rounded-3xl border-2 border-dashed border-amber-200 space-y-4">
+                  <div>
+                    <p className="font-black text-base text-slate-900">No local records found for <b>"{query}"</b></p>
+                    <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                      Click below to fetch directly from the live PhilHealth CRS server and auto-update the system database.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
+                    <button
+                      onClick={() => forceSyncCRS(query)}
+                      disabled={syncingCRS}
+                      className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-2xl text-xs font-black shadow-md shadow-amber-500/20 transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      <Zap className={`w-4 h-4 fill-current ${syncingCRS ? 'animate-spin' : ''}`} />
+                      <span>{syncingCRS ? 'Fetching & Auto-Updating from PhilHealth CRS…' : '⚡ Sync & Auto-Update directly from Live PhilHealth CRS'}</span>
+                    </button>
+
+                    <button
+                      onClick={() => openLiveCRS(query)}
+                      className="inline-flex items-center gap-2 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-black shadow-sm transition-all cursor-pointer"
+                    >
+                      <Activity className="w-4 h-4" />
+                      <span>View Live CRS Timeline</span>
+                    </button>
+                  </div>
                 </div>
               )}
 
               {!searching && !query && (
                 <div className="p-12 text-center text-slate-400 text-sm">
                   <Search className="w-12 h-12 mx-auto mb-3 opacity-25 text-slate-600" />
-                  <p className="font-bold text-slate-600">Enter one or two codes (e.g. P03.4, 99460)</p>
+                  <p className="font-bold text-slate-600">Enter one or two codes (e.g. 16010, P03.4, 99460)</p>
                   <p className="text-xs text-slate-400 mt-1">Instant Dual Case Rate calculation and 8,900+ database records</p>
                 </div>
               )}
 
               {/* Card Grid View */}
+              {results.length > 0 && (
+                <div className="mb-3 flex items-center justify-between px-1 text-xs text-slate-500 font-bold">
+                  <span>Found {results.length} record(s) matching "{query}"</span>
+                  <button
+                    onClick={() => forceSyncCRS(query)}
+                    disabled={syncingCRS}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-black transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    <Zap className={`w-3.5 h-3.5 text-amber-600 fill-current ${syncingCRS ? 'animate-spin' : ''}`} />
+                    <span>{syncingCRS ? 'Syncing...' : '⚡ Sync Live Rates from PhilHealth CRS'}</span>
+                  </button>
+                </div>
+              )}
+
               {results.length > 0 && viewMode === 'CARD' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
                   {results.map(r => (
@@ -592,6 +675,7 @@ export default function CHISLookupView() {
                       isFav={favCodes.has(r.code)}
                       onToggleFav={toggleFav}
                       onOpenCRS={openLiveCRS}
+                      onSyncCRS={forceSyncCRS}
                     />
                   ))}
                 </div>
@@ -618,6 +702,7 @@ export default function CHISLookupView() {
                           isFav={favCodes.has(r.code)}
                           onToggleFav={toggleFav}
                           onOpenCRS={openLiveCRS}
+                          onSyncCRS={forceSyncCRS}
                         />
                       ))}
                     </tbody>
@@ -629,6 +714,7 @@ export default function CHISLookupView() {
         )}
 
         {/* Favorites Tab Content */}
+
         {tab === 'FAVORITES' && (
           <div className="p-3 sm:p-5">
             {favorites.length === 0 ? (

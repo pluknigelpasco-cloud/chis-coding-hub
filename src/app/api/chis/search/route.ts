@@ -138,11 +138,14 @@ export async function GET(req: NextRequest) {
     ]);
   }
 
+  const forceSync = searchParams.get('forceSync') === 'true';
+
   // 3. AUTOMATIC REAL-TIME PHILHEALTH CRS FALLBACK & SYNC
-  // If any search token had 0 matches in local database, fetch directly from live PhilHealth CRS server!
+  // If forceSync is true OR any search token had 0 matches in local database, fetch directly from live PhilHealth CRS server!
   for (const token of searchTokens) {
     const matchedCount = tokenMatchedCount.get(token.toUpperCase()) || 0;
-    if (matchedCount === 0 && token.length >= 2) {
+    if ((forceSync || matchedCount === 0) && token.length >= 2) {
+
       try {
         const liveRecords = await fetchLiveCRS(token);
         if (liveRecords && liveRecords.length > 0) {

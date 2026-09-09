@@ -16,24 +16,24 @@ export async function GET(req: NextRequest) {
   try {
     const records = await fetchLiveCRS(code);
 
-    // If records found from PhilHealth live CRS, update the local Supabase cache in the background
+    // If records found from PhilHealth live CRS, update or insert into local Supabase database
     if (records.length > 0) {
       const currentRecord = records.find(r => r.isCurrent) || records[0];
-      const isICD = /^[A-Z]/i.test(currentRecord.code);
+      const isICD = /^[A-Z]\d{2}/i.test(currentRecord.code);
       const table = isICD ? 'icd10_db' : 'rvs_db';
       const supabase = getSupabaseAdmin();
 
       if (currentRecord.firstCaseRate.applicable && currentRecord.firstCaseRate.caseRate > 0) {
-        supabase
+        await supabase
           .from(table)
-          .update({
+          .upsert({
+            code: currentRecord.code,
+            description: currentRecord.description,
             case_rate: currentRecord.firstCaseRate.caseRate,
             hospital_fee: currentRecord.firstCaseRate.hospitalFee,
             professional_fee: currentRecord.firstCaseRate.professionalFee,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('code', currentRecord.code)
-          .then(() => {});
+            effectivity_date: currentRecord.effectivity,
+          }, { onConflict: 'code' });
       }
     }
 
