@@ -47,44 +47,13 @@ function TypeBadge({ type }: { type: string }) {
   );
 }
 
-// Strict PhilHealth Second Case Rate Eligibility Rules:
-// Under PhilHealth ACR Policy (Circular 0035, s. 2013):
-// 1. ALL ICD-10 (Medical diagnoses) are STRICTLY NOT APPLICABLE as a Second Case Rate!
-// 2. Only Surgical Procedures (RVS codes) can be claimed as a 2nd Case Rate, EXCEPT excluded primary-only packages (Cesarean, NSD, Newborn, Dialysis, Chemo, etc.).
+// Under PhilHealth ACR Policy (Circular 0035, s. 2013 & updated CRS circulars):
+// 1. Pure Medical Diagnoses (ICD-10) are NOT applicable as a 2nd Case Rate.
+// 2. All Surgical Procedures (RVS codes) and PhilHealth Benefit Packages (e.g. 99460 Newborn Package, 59514 CS, 16010 Debridement, NSD01) ARE APPLICABLE as 2nd Case Rates!
 function isSecondCaseRateAllowed(type: string, code: string, description: string): boolean {
-  // Medical diagnoses (ICD-10) are NEVER allowed as 2nd Case Rate!
-  if (type === 'ICD' || !/^\d{4,5}$/.test(String(code || '').trim())) {
+  if (type === 'ICD') {
     return false;
   }
-
-  const c = String(code || '').toUpperCase().trim();
-  const d = String(description || '').toUpperCase();
-
-  // 1. Explicit PhilHealth Non-Secondary Case Rate Codes (Cesarean, NSD, Newborn, Dialysis, Chemo, Radio, etc.)
-  const nonSecondaryCodes = new Set([
-    // Cesarean deliveries
-    '59514', '59515', '59510', '59525', '59513', '59511',
-    // Vaginal deliveries & Maternity Packages
-    'NSD01', '59400', '59409', '59410', '59414', 'MCP01', 'MCP02', 'NCP01',
-    // Newborn Care Packages
-    '99460', '99431', '99432', '99433',
-    // Hemodialysis & Peritoneal Dialysis
-    '90935', '90937', '90945', '90947', '90999', 'Z49.1',
-    // Chemotherapy
-    '96408', '96409', '96410', '96412', '96414', '96416', '96420', '96422', '96423', '96425', '96440', '96445', '96450', '96542',
-    // Radiotherapy
-    '77401', '77402', '77403', '77404', '77406', '77407', '77408', '77409', '77411', '77412', '77413', '77414', '77416', '77427',
-    // Specialized & Outpatient packages
-    'ABTC', '90471', '90472', '99199', 'HIV01', 'HIV02', 'VAS01', 'BTL01', 'CAT01'
-  ]);
-
-  if (nonSecondaryCodes.has(c)) return false;
-
-  // 2. Pattern check in description
-  if (/CESARIAN|CESAREAN|CAESAREAN|NORMAL SPONTANEOUS DELIVERY|MATERNITY CARE PACKAGE|NEWBORN CARE PACKAGE|HEMODIALYSIS|PERITONEAL DIALYSIS|CHEMOTHERAPY|RADIOTHERAPY|ANIMAL BITE|TB-DOTS/i.test(d)) {
-    return false;
-  }
-
   return true;
 }
 
