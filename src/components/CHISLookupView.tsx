@@ -884,16 +884,22 @@ export default function CHISLookupView() {
 
                   {/* Facility Applicability */}
                   <div className="mt-2 pt-2 border-t border-slate-200/60">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Applicable Healthcare Facilities</p>
+                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Hospital & Facility Applicability (from PhilHealth CRS)</p>
                     <div className="flex flex-wrap gap-1.5 text-[11px]">
-                      {r.facilities.level1 && <span className="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 font-bold">Level 1</span>}
-                      {r.facilities.level2 && <span className="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 font-bold">Level 2</span>}
-                      {r.facilities.level3 && <span className="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 font-bold">Level 3</span>}
-                      {r.facilities.asc && <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold">ASC</span>}
-                      {r.facilities.pcf && <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold">PCF</span>}
-                      {r.facilities.mcp && <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold">MCP / MAT</span>}
-                      {r.facilities.fsdc && <span className="px-2 py-0.5 rounded-md bg-purple-100 text-purple-800 font-bold">FSDC</span>}
-                      {r.facilities.others && <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold">Other HCIs</span>}
+                      <span className={`px-2.5 py-0.5 rounded-md font-black ${r.facilities.level1 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-slate-100 text-slate-400 border border-slate-200 line-through opacity-60'}`}>
+                        {r.facilities.level1 ? '✓ Level 1 Hospital' : '✕ Level 1 Hospital'}
+                      </span>
+                      <span className={`px-2.5 py-0.5 rounded-md font-black ${r.facilities.level2 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-slate-100 text-slate-400 border border-slate-200 line-through opacity-60'}`}>
+                        {r.facilities.level2 ? '✓ Level 2 Hospital' : '✕ Level 2 Hospital'}
+                      </span>
+                      <span className={`px-2.5 py-0.5 rounded-md font-black ${r.facilities.level3 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-slate-100 text-slate-400 border border-slate-200 line-through opacity-60'}`}>
+                        {r.facilities.level3 ? '✓ Level 3 Hospital' : '✕ Level 3 Hospital'}
+                      </span>
+                      {r.facilities.asc && <span className="px-2.5 py-0.5 rounded-md bg-blue-100 text-blue-800 font-bold border border-blue-200">✓ ASC</span>}
+                      {r.facilities.pcf && <span className="px-2.5 py-0.5 rounded-md bg-blue-100 text-blue-800 font-bold border border-blue-200">✓ PCF</span>}
+                      {r.facilities.mcp && <span className="px-2.5 py-0.5 rounded-md bg-pink-100 text-pink-800 font-bold border border-pink-200">✓ MCP / MAT</span>}
+                      {r.facilities.fsdc && <span className="px-2.5 py-0.5 rounded-md bg-purple-100 text-purple-800 font-bold border border-purple-200">✓ FSDC</span>}
+                      {r.facilities.others && <span className="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold border border-slate-200">✓ Other HCIs</span>}
                     </div>
                   </div>
                 </div>

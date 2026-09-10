@@ -147,7 +147,8 @@ function parseCRSSections(html: string, query: string): CRSRecord[] {
       if (!code || !description || !isRecognizedCode) continue;
 
       const recordStart = rowMatch.index;
-      const recordHtml = sec.html.substring(recordStart);
+      const nextRowIdx = sec.html.indexOf('<tr', recordStart + 1);
+      const recordHtml = sec.html.substring(recordStart, nextRowIdx !== -1 ? nextRowIdx : sec.html.length);
 
       // Primary case rate
       const primaryMatch = recordHtml.match(
