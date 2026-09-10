@@ -48,12 +48,38 @@ function TypeBadge({ type }: { type: string }) {
 }
 
 // Under PhilHealth ACR Policy (Circular 0035, s. 2013 & updated CRS circulars):
-// 1. Pure Medical Diagnoses (ICD-10) are NOT applicable as a 2nd Case Rate.
-// 2. All Surgical Procedures (RVS codes) and PhilHealth Benefit Packages (e.g. 99460 Newborn Package, 59514 CS, 16010 Debridement, NSD01) ARE APPLICABLE as 2nd Case Rates!
+// 1. All Medical Diagnoses (ICD-10) are NOT applicable as a 2nd Case Rate.
+// 2. Delivery Packages (NSD01, CS 59514, MCP01), Dialysis, Chemo are NOT applicable as 2nd Case Rate.
+// 3. Newborn Care Package (99460) and Surgical Procedures (e.g. 16010 Debridement, D&C, etc.) ARE APPLICABLE as 2nd Case Rates!
 function isSecondCaseRateAllowed(type: string, code: string, description: string): boolean {
   if (type === 'ICD') {
     return false;
   }
+
+  const c = String(code || '').toUpperCase().trim();
+  const d = String(description || '').toUpperCase().trim();
+
+  // Newborn Care Package 99460 IS APPLICABLE as 2nd Case Rate (listed in PhilHealth CRS)
+  if (c === '99460' || c === '99431' || c === '99432' || c === '99433' || d.includes('NEWBORN CARE PACKAGE')) {
+    return true;
+  }
+
+  // Delivery Packages, Cesarean Sections, Dialysis, Chemotherapy are NOT applicable as 2nd Case Rate
+  const nonSecondaryCodes = new Set([
+    'NSD01', '59514', '59515', '59510', '59525', '59513', '59511',
+    '59400', '59409', '59410', '59414', 'MCP01', 'MCP02', 'NCP01',
+    '90935', '90937', '90945', '90947', '90999', 'Z49.1',
+    'ABTC', 'HIV01', 'HIV02'
+  ]);
+
+  if (nonSecondaryCodes.has(c)) {
+    return false;
+  }
+
+  if (/DELIVERY|CESAREAN|CESARIAN|CAESAREAN|MATERNITY CARE|HEMODIALYSIS|PERITONEAL DIALYSIS|CHEMOTHERAPY|RADIOTHERAPY|ANIMAL BITE|TB-DOTS/i.test(d)) {
+    return false;
+  }
+
   return true;
 }
 
