@@ -174,7 +174,7 @@ body {
 @media print {
   @page {
     size: landscape;
-    margin: 8mm;
+    margin: 6mm 8mm;
   }
 
   body {

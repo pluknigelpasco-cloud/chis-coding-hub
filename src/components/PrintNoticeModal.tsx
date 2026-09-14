@@ -89,45 +89,44 @@ export default function PrintNoticeModal({ records, onClose }: PrintNoticeModalP
               </thead>
               <tbody className="divide-y divide-slate-300">
                 {records.map((r, i) => (
-                  <tr key={r.id || i} className="align-top">
-                    <td className="py-2 px-3 font-bold text-slate-500">{i + 1}</td>
-                    <td className="py-2 px-3 font-black text-slate-900 whitespace-nowrap">{r.reference}</td>
-                    <td className="py-2 px-3 text-slate-700 whitespace-nowrap">{r.claimReceivedDate || '—'}</td>
-                    <td className="py-2 px-3 font-bold text-slate-800">{r.patientName}</td>
-                    <td className="py-2 px-3 font-semibold text-slate-600">{r.memberCategory}</td>
-                    <td className="py-2 px-3 whitespace-nowrap text-slate-700">
+                  <tr key={r.id || i} className="align-top print:break-inside-avoid break-inside-avoid">
+                    <td className="py-2 px-3 print:py-1 print:px-1.5 font-bold text-slate-500">{i + 1}</td>
+                    <td className="py-2 px-3 print:py-1 print:px-1.5 font-black text-slate-900 whitespace-nowrap">{r.reference}</td>
+                    <td className="py-2 px-3 print:py-1 print:px-1.5 text-slate-700 whitespace-nowrap">{r.claimReceivedDate || '—'}</td>
+                    <td className="py-2 px-3 print:py-1 print:px-1.5 font-bold text-slate-800">{r.patientName}</td>
+                    <td className="py-2 px-3 print:py-1 print:px-1.5 font-semibold text-slate-600">{r.memberCategory}</td>
+                    <td className="py-2 px-3 print:py-1 print:px-1.5 whitespace-nowrap text-slate-700">
                       {r.admittedDate} – {r.dischargedDate}
                     </td>
-                    <td className="py-2 px-3 text-right font-black text-slate-900 whitespace-nowrap">
+                    <td className="py-2 px-3 print:py-1 print:px-1.5 text-right font-black text-slate-900 whitespace-nowrap">
                       ₱{formatCurrency(r.claimAmount)}
                     </td>
-                    <td className="py-2 px-3 text-[11px] text-slate-700 leading-snug">{r.deficiency}</td>
-                    <td className="py-2 px-3 font-black text-slate-900 whitespace-nowrap">{r.expiryDate}</td>
-                    <td className="py-2 px-3 text-[11px] text-slate-700 italic">{r.remarks || '—'}</td>
+                    <td className="py-2 px-3 print:py-1 print:px-1.5 text-[11px] text-slate-700 leading-snug">{r.deficiency}</td>
+                    <td className="py-2 px-3 print:py-1 print:px-1.5 font-black text-slate-900 whitespace-nowrap">{r.expiryDate}</td>
+                    <td className="py-2 px-3 print:py-1 print:px-1.5 text-[11px] text-slate-700 italic">{r.remarks || '—'}</td>
                   </tr>
                 ))}
-              </tbody>
-              <tfoot>
-                <tr className="border-t-2 border-slate-900 font-black text-xs bg-slate-50/80 print:bg-transparent">
-                  <td colSpan={6} className="py-3 px-3 uppercase text-right">
+                {/* Total Summary Row (Inside tbody so it NEVER repeats across page breaks) */}
+                <tr className="border-t-2 border-slate-900 font-black text-xs bg-slate-50/80 print:bg-transparent print:break-inside-avoid break-inside-avoid">
+                  <td colSpan={6} className="py-2 px-2.5 uppercase text-right print:py-1 print:px-1.5">
                     Total Amount ({records.length} claim{records.length > 1 ? 's' : ''}):
                   </td>
-                  <td className="py-3 px-3 text-right text-sm">₱{formatCurrency(totalAmount)}</td>
+                  <td className="py-2 px-2.5 text-right text-sm font-black print:py-1 print:px-1.5">₱{formatCurrency(totalAmount)}</td>
                   <td colSpan={3}></td>
                 </tr>
-              </tfoot>
+              </tbody>
             </table>
           </div>
 
-          {/* Signatures */}
-          <div className="grid grid-cols-2 gap-16 mt-12 pt-8 border-t border-slate-300 text-xs">
+          {/* Signatures (Prevent splitting across pages) */}
+          <div className="grid grid-cols-2 gap-12 mt-6 pt-6 border-t border-slate-300 text-xs print:mt-4 print:pt-4 print:break-inside-avoid break-inside-avoid">
             <div>
-              <p className="font-bold text-slate-700 mb-10">Prepared / Transmitted By:</p>
+              <p className="font-bold text-slate-700 mb-8 print:mb-5">Prepared / Transmitted By:</p>
               <div className="border-b border-slate-900 w-56" />
               <p className="text-[10px] text-slate-500 mt-1 font-semibold">PhilHealth Billing Staff / Transmitter</p>
             </div>
             <div>
-              <p className="font-bold text-slate-700 mb-10">Noted / Received By:</p>
+              <p className="font-bold text-slate-700 mb-8 print:mb-5">Noted / Received By:</p>
               <div className="border-b border-slate-900 w-56" />
               <p className="text-[10px] text-slate-500 mt-1 font-semibold">PhilHealth Section Head / Liaison</p>
             </div>
