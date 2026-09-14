@@ -49,9 +49,13 @@ function TypeBadge({ type }: { type: string }) {
 
 // Under PhilHealth ACR Policy (Circular 0035, s. 2013 & updated CRS circulars):
 // 1. All Medical Diagnoses (ICD-10) are NOT applicable as a 2nd Case Rate.
-// 2. Delivery Packages (NSD01, CS 59514, MCP01), Dialysis, Chemo are NOT applicable as 2nd Case Rate.
+// 2. Delivery Packages (NSD01, CS 59514, Breech 59411, MCP01), Dialysis, Chemo are NOT applicable as 2nd Case Rate.
 // 3. Newborn Care Package (99460) and Surgical Procedures (e.g. 16010 Debridement, D&C, etc.) ARE APPLICABLE as 2nd Case Rates!
-function isSecondCaseRateAllowed(type: string, code: string, description: string): boolean {
+function isSecondCaseRateAllowed(type: string, code: string, description: string, secondCaseRateApplicable?: boolean): boolean {
+  if (secondCaseRateApplicable === false) {
+    return false;
+  }
+
   if (type === 'ICD') {
     return false;
   }
@@ -64,10 +68,12 @@ function isSecondCaseRateAllowed(type: string, code: string, description: string
     return true;
   }
 
-  // Delivery Packages, Cesarean Sections, Dialysis, Chemotherapy are NOT applicable as 2nd Case Rate
+  // Delivery Packages, Cesarean Sections, Breech Extractions, Dialysis, Chemotherapy are NOT applicable as 2nd Case Rate
   const nonSecondaryCodes = new Set([
-    'NSD01', '59514', '59515', '59510', '59525', '59513', '59511',
-    '59400', '59409', '59410', '59414', 'MCP01', 'MCP02', 'NCP01',
+    'NSD01', 'MCP01', 'MCP02', 'NCP01',
+    '59400', '59409', '59410', '59411', '59412', '59413', '59414', '59415',
+    '59510', '59511', '59513', '59514', '59515', '59525',
+    '59610', '59612', '59614', '59618', '59620', '59622',
     '90935', '90937', '90945', '90947', '90999', 'Z49.1',
     'ABTC', 'HIV01', 'HIV02'
   ]);
@@ -76,7 +82,7 @@ function isSecondCaseRateAllowed(type: string, code: string, description: string
     return false;
   }
 
-  if (/DELIVERY|CESAREAN|CESARIAN|CAESAREAN|MATERNITY CARE|HEMODIALYSIS|PERITONEAL DIALYSIS|CHEMOTHERAPY|RADIOTHERAPY|ANIMAL BITE|TB-DOTS/i.test(d)) {
+  if (/DELIVERY|CESAREAN|CESARIAN|CAESAREAN|BREECH|MATERNITY|HEMODIALYSIS|PERITONEAL DIALYSIS|CHEMOTHERAPY|RADIOTHERAPY|ANIMAL BITE|TB-DOTS/i.test(d)) {
     return false;
   }
 
@@ -97,7 +103,7 @@ function ResultCard({
   onOpenCRS: (code: string) => void;
   onSyncCRS?: (code: string) => void;
 }) {
-  const secondApplicable = isSecondCaseRateAllowed(record.type, record.code, record.description);
+  const secondApplicable = isSecondCaseRateAllowed(record.type, record.code, record.description, record.secondCaseRateApplicable);
   const secondRate = secondApplicable ? record.case_rate : 0;
   const secondHCI = secondApplicable ? record.hospital_fee : 0;
   const secondPF = secondApplicable ? record.professional_fee : 0;
@@ -254,7 +260,7 @@ function ResultTableRow({
   onOpenCRS: (code: string) => void;
   onSyncCRS?: (code: string) => void;
 }) {
-  const secondApplicable = isSecondCaseRateAllowed(record.type, record.code, record.description);
+  const secondApplicable = isSecondCaseRateAllowed(record.type, record.code, record.description, record.secondCaseRateApplicable);
 
   return (
     <tr className="hover:bg-slate-50/80 group transition-colors">

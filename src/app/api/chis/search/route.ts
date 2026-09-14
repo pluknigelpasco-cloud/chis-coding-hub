@@ -176,6 +176,7 @@ export async function GET(req: NextRequest) {
                 isExactMatch: liveRec.code.toUpperCase() === token.toUpperCase(),
                 matchedToken: token.toUpperCase(),
                 source: 'LIVE_CRS',
+                secondCaseRateApplicable: liveRec.secondCaseRate?.applicable,
               });
 
               // Asynchronously upsert to Supabase database so future searches are instant

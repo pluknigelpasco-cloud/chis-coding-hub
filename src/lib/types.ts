@@ -124,6 +124,7 @@ export interface CHISRecord {
   professional_fee: number;
   type: 'ICD' | 'RVS';
   effectivity_date?: string;
+  secondCaseRateApplicable?: boolean;
 }
 
 export interface Favorite {
