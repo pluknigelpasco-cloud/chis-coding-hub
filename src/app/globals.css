@@ -174,12 +174,16 @@ body {
 @media print {
   @page {
     size: landscape;
-    margin: 6mm 8mm;
+    margin: 5mm 7mm;
   }
 
+  html,
   body {
     background-color: #ffffff !important;
     color: #000000 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
@@ -187,6 +191,7 @@ body {
   aside,
   header,
   nav,
+  main,
   .print-hidden,
   .print\:hidden {
     display: none !important;
@@ -196,17 +201,26 @@ body {
     position: static !important;
     background: transparent !important;
     padding: 0 !important;
+    margin: 0 !important;
     display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
   }
 
   .print-container-card {
     max-width: 100% !important;
     width: 100% !important;
     max-height: none !important;
+    height: auto !important;
+    min-height: 0 !important;
     border: none !important;
+    border-radius: 0 !important;
     box-shadow: none !important;
     overflow: visible !important;
     padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
   }
 
   .print-page-break {

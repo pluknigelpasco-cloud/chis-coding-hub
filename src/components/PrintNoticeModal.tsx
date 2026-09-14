@@ -46,45 +46,45 @@ export default function PrintNoticeModal({ records, onClose }: PrintNoticeModalP
         {/* Printable Area */}
         <div className="p-8 sm:p-10 overflow-y-auto print:p-0 print:overflow-visible">
           {/* Header (Dual Official Seals) */}
-          <div className="flex items-center justify-between gap-4 pb-5 border-b-2 border-slate-900">
+          <div className="flex items-center justify-between gap-4 pb-5 print:pb-3 border-b-2 border-slate-900">
             <img
               src="/cebu_seal.png"
               alt="Province of Cebu Seal"
-              className="w-20 h-20 object-contain shrink-0"
+              className="w-20 h-20 print:w-14 print:h-14 object-contain shrink-0"
             />
             <div className="text-center flex-1">
-              <p className="text-[11px] uppercase font-bold text-slate-500 tracking-widest">Republic of the Philippines · Province of Cebu</p>
-              <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight mt-0.5">{HOSPITAL_NAME}</h2>
-              <p className="text-xs font-bold text-slate-700">{SECTION_NAME}</p>
-              <h3 className="text-sm font-black text-brand-blue mt-1.5 uppercase tracking-wider">
+              <p className="text-[11px] print:text-[10px] uppercase font-bold text-slate-500 tracking-widest">Republic of the Philippines · Province of Cebu</p>
+              <h2 className="text-xl print:text-lg font-black text-slate-900 uppercase tracking-tight mt-0.5">{HOSPITAL_NAME}</h2>
+              <p className="text-xs print:text-[11px] font-bold text-slate-700">{SECTION_NAME}</p>
+              <h3 className="text-sm print:text-xs font-black text-brand-blue print:text-slate-900 mt-1 print:mt-0.5 uppercase tracking-wider">
                 PHILHEALTH NOTICE TRANSMITTAL & COMPLIANCE REPORT
               </h3>
-              <p className="text-[10px] text-slate-400 mt-0.5 font-semibold">
+              <p className="text-[10px] print:text-[9px] text-slate-400 print:text-slate-600 mt-0.5 font-semibold">
                 Generated on {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
               </p>
             </div>
             <img
               src="/cph_logo.png"
               alt="CPH Balamban Hospital Seal"
-              className="w-20 h-20 object-contain shrink-0"
+              className="w-20 h-20 print:w-14 print:h-14 object-contain shrink-0"
             />
           </div>
 
           {/* Table */}
-          <div className="mt-6">
+          <div className="mt-6 print:mt-3">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="border-b-2 border-slate-900 text-[10px] uppercase font-black bg-slate-50 print:bg-transparent">
-                  <th className="py-2.5 px-3 w-10">No.</th>
-                  <th className="py-2.5 px-3">Series Number</th>
-                  <th className="py-2.5 px-3 whitespace-nowrap">Date Claim Received</th>
-                  <th className="py-2.5 px-3">Patient Name</th>
-                  <th className="py-2.5 px-3">Cat</th>
-                  <th className="py-2.5 px-3 whitespace-nowrap">Confinement</th>
-                  <th className="py-2.5 px-3 text-right">Claim Amount</th>
-                  <th className="py-2.5 px-3">Deficiency</th>
-                  <th className="py-2.5 px-3 whitespace-nowrap">Deadline</th>
-                  <th className="py-2.5 px-3">Remarks</th>
+                  <th className="py-2.5 px-3 print:py-1 print:px-1.5 w-10">No.</th>
+                  <th className="py-2.5 px-3 print:py-1 print:px-1.5">Series Number</th>
+                  <th className="py-2.5 px-3 print:py-1 print:px-1.5 whitespace-nowrap">Date Claim Received</th>
+                  <th className="py-2.5 px-3 print:py-1 print:px-1.5">Patient Name</th>
+                  <th className="py-2.5 px-3 print:py-1 print:px-1.5">Cat</th>
+                  <th className="py-2.5 px-3 print:py-1 print:px-1.5 whitespace-nowrap">Confinement</th>
+                  <th className="py-2.5 px-3 print:py-1 print:px-1.5 text-right">Claim Amount</th>
+                  <th className="py-2.5 px-3 print:py-1 print:px-1.5">Deficiency</th>
+                  <th className="py-2.5 px-3 print:py-1 print:px-1.5 whitespace-nowrap">Deadline</th>
+                  <th className="py-2.5 px-3 print:py-1 print:px-1.5">Remarks</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-300">
@@ -101,9 +101,9 @@ export default function PrintNoticeModal({ records, onClose }: PrintNoticeModalP
                     <td className="py-2 px-3 print:py-1 print:px-1.5 text-right font-black text-slate-900 whitespace-nowrap">
                       ₱{formatCurrency(r.claimAmount)}
                     </td>
-                    <td className="py-2 px-3 print:py-1 print:px-1.5 text-[11px] text-slate-700 leading-snug">{r.deficiency}</td>
+                    <td className="py-2 px-3 print:py-1 print:px-1.5 text-[11px] print:text-[10px] text-slate-700 leading-snug">{r.deficiency}</td>
                     <td className="py-2 px-3 print:py-1 print:px-1.5 font-black text-slate-900 whitespace-nowrap">{r.expiryDate}</td>
-                    <td className="py-2 px-3 print:py-1 print:px-1.5 text-[11px] text-slate-700 italic">{r.remarks || '—'}</td>
+                    <td className="py-2 px-3 print:py-1 print:px-1.5 text-[11px] print:text-[10px] text-slate-700 italic">{r.remarks || '—'}</td>
                   </tr>
                 ))}
                 {/* Total Summary Row (Inside tbody so it NEVER repeats across page breaks) */}
@@ -119,14 +119,14 @@ export default function PrintNoticeModal({ records, onClose }: PrintNoticeModalP
           </div>
 
           {/* Signatures (Prevent splitting across pages) */}
-          <div className="grid grid-cols-2 gap-12 mt-6 pt-6 border-t border-slate-300 text-xs print:mt-4 print:pt-4 print:break-inside-avoid break-inside-avoid">
+          <div className="grid grid-cols-2 gap-12 mt-6 pt-6 border-t border-slate-300 text-xs print:mt-3 print:pt-3 print:break-inside-avoid break-inside-avoid">
             <div>
-              <p className="font-bold text-slate-700 mb-8 print:mb-5">Prepared / Transmitted By:</p>
+              <p className="font-bold text-slate-700 mb-8 print:mb-4">Prepared / Transmitted By:</p>
               <div className="border-b border-slate-900 w-56" />
               <p className="text-[10px] text-slate-500 mt-1 font-semibold">PhilHealth Billing Staff / Transmitter</p>
             </div>
             <div>
-              <p className="font-bold text-slate-700 mb-8 print:mb-5">Noted / Received By:</p>
+              <p className="font-bold text-slate-700 mb-8 print:mb-4">Noted / Received By:</p>
               <div className="border-b border-slate-900 w-56" />
               <p className="text-[10px] text-slate-500 mt-1 font-semibold">PhilHealth Section Head / Liaison</p>
             </div>
