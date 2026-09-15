@@ -68,12 +68,13 @@ function isSecondCaseRateAllowed(type: string, code: string, description: string
     return true;
   }
 
-  // Delivery Packages, Cesarean Sections, Breech Extractions, Dialysis, Chemotherapy are NOT applicable as 2nd Case Rate
+  // Delivery Packages, Cesarean Sections, Breech Extractions, Skeletal Fixations, Dialysis, Chemotherapy are NOT applicable as 2nd Case Rate
   const nonSecondaryCodes = new Set([
     'NSD01', 'MCP01', 'MCP02', 'NCP01',
     '59400', '59409', '59410', '59411', '59412', '59413', '59414', '59415',
     '59510', '59511', '59513', '59514', '59515', '59525',
     '59610', '59612', '59614', '59618', '59620', '59622',
+    '24538', '24530', '24535', '24500', '24505', '24515',
     '90935', '90937', '90945', '90947', '90999', 'Z49.1',
     'ABTC', 'HIV01', 'HIV02'
   ]);
@@ -82,7 +83,7 @@ function isSecondCaseRateAllowed(type: string, code: string, description: string
     return false;
   }
 
-  if (/DELIVERY|CESAREAN|CESARIAN|CAESAREAN|BREECH|MATERNITY|HEMODIALYSIS|PERITONEAL DIALYSIS|CHEMOTHERAPY|RADIOTHERAPY|ANIMAL BITE|TB-DOTS/i.test(d)) {
+  if (/DELIVERY|CESAREAN|CESARIAN|CAESAREAN|BREECH|MATERNITY|HEMODIALYSIS|PERITONEAL DIALYSIS|CHEMOTHERAPY|RADIOTHERAPY|ANIMAL BITE|TB-DOTS|SKELETAL FIXATION|PERCUTANEOUS SKELETAL|CLOSED REDUCTION|MANIPULATION/i.test(d)) {
     return false;
   }
 

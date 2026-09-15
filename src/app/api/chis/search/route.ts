@@ -62,6 +62,7 @@ export async function GET(req: NextRequest) {
           hospital_fee: Number(row.hospital_fee) || 0,
           professional_fee: Number(row.professional_fee) || 0,
           effectivity_date: row.effectivity_date || null,
+          secondCaseRateApplicable: typeof row.second_case_rate_applicable === 'boolean' ? row.second_case_rate_applicable : false,
           type: 'ICD',
           isExactMatch: true,
           matchedToken: cleanToken.toUpperCase(),
@@ -89,6 +90,7 @@ export async function GET(req: NextRequest) {
           hospital_fee: Number(row.hospital_fee) || 0,
           professional_fee: Number(row.professional_fee) || 0,
           effectivity_date: row.effectivity_date || null,
+          secondCaseRateApplicable: typeof row.second_case_rate_applicable === 'boolean' ? row.second_case_rate_applicable : undefined,
           type: 'RVS',
           isExactMatch: true,
           matchedToken: cleanToken.toUpperCase(),
@@ -124,6 +126,7 @@ export async function GET(req: NextRequest) {
             hospital_fee: Number(row.hospital_fee) || 0,
             professional_fee: Number(row.professional_fee) || 0,
             effectivity_date: row.effectivity_date || null,
+            secondCaseRateApplicable: typeof row.second_case_rate_applicable === 'boolean' ? row.second_case_rate_applicable : (recordType === 'ICD' ? false : undefined),
             type: recordType,
             isExactMatch: false,
             matchedToken: token.toUpperCase(),
@@ -190,6 +193,7 @@ export async function GET(req: NextRequest) {
                     hospital_fee: liveRec.firstCaseRate.hospitalFee,
                     professional_fee: liveRec.firstCaseRate.professionalFee,
                     effectivity_date: liveRec.effectivity,
+                    second_case_rate_applicable: liveRec.secondCaseRate?.applicable,
                   },
                   { onConflict: 'code' }
                 )
