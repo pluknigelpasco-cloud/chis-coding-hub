@@ -47,15 +47,23 @@ function TypeBadge({ type }: { type: string }) {
   );
 }
 
-// Under PhilHealth ACR Policy (Circular 0035, s. 2013 & updated CRS circulars):
-// 1. All Medical Diagnoses (ICD-10) are NOT applicable as a 2nd Case Rate.
-// 2. Delivery Packages (NSD01, CS 59514, Breech 59411, MCP01), Dialysis, Chemo are NOT applicable as 2nd Case Rate.
-// 3. Newborn Care Package (99460) and Surgical Procedures (e.g. 16010 Debridement, D&C, etc.) ARE APPLICABLE as 2nd Case Rates!
+// Comprehensive PhilHealth ACR 2nd Case Rate Policy Engine (Circular 0035, s. 2013 & official PhilHealth CRS endpoint):
+// 1. ALL Medical Diagnoses (ICD-10) are 100% NOT APPLICABLE as 2nd Case Rate.
+// 2. All Diagnostic (70000-79999), Laboratory (80000-89999), E&M/Medicine (90000-99999 except 99460 ENCP),
+//    Obstetric Delivery (59000-59899, NSD01, MCP01), Fracture Reductions/Fixations (24000-24999, 29000-29799),
+//    Hemodialysis, Chemotherapy, Radiotherapy, ABTC are NOT APPLICABLE as 2nd Case Rate.
+// 3. Surgical Procedures (10000-69999, e.g. 16010 Debridement, 58120 D&C, 44950 Appendectomy, etc.) & 99460 ENCP ARE APPLICABLE as 2nd Case Rate.
+// 4. Exact live CRS boolean from https://crs.philhealth.gov.ph/ takes priority when present.
 function isSecondCaseRateAllowed(type: string, code: string, description: string, secondCaseRateApplicable?: boolean): boolean {
+  // If live PhilHealth CRS endpoint explicitly specifies applicability, honor it 100%
   if (secondCaseRateApplicable === false) {
     return false;
   }
+  if (secondCaseRateApplicable === true && type !== 'ICD') {
+    return true;
+  }
 
+  // ALL ICD-10 Medical Diagnoses are NOT APPLICABLE as 2nd Case Rate
   if (type === 'ICD') {
     return false;
   }
@@ -63,27 +71,38 @@ function isSecondCaseRateAllowed(type: string, code: string, description: string
   const c = String(code || '').toUpperCase().trim();
   const d = String(description || '').toUpperCase().trim();
 
-  // Newborn Care Package 99460 IS APPLICABLE as 2nd Case Rate (listed in PhilHealth CRS)
+  // Newborn Care Package (99460, 99431-99433) IS APPLICABLE as 2nd Case Rate
   if (c === '99460' || c === '99431' || c === '99432' || c === '99433' || d.includes('NEWBORN CARE PACKAGE')) {
     return true;
   }
 
-  // Delivery Packages, Cesarean Sections, Breech Extractions, Skeletal Fixations, Dialysis, Chemotherapy are NOT applicable as 2nd Case Rate
+  // Strict non-secondary code set
   const nonSecondaryCodes = new Set([
-    'NSD01', 'MCP01', 'MCP02', 'NCP01',
-    '59400', '59409', '59410', '59411', '59412', '59413', '59414', '59415',
-    '59510', '59511', '59513', '59514', '59515', '59525',
-    '59610', '59612', '59614', '59618', '59620', '59622',
-    '24538', '24530', '24535', '24500', '24505', '24515',
-    '90935', '90937', '90945', '90947', '90999', 'Z49.1',
-    'ABTC', 'HIV01', 'HIV02'
+    'NSD01', 'MCP01', 'MCP02', 'NCP01', 'ABTC', 'HIV01', 'HIV02', 'TBDOTS', 'MALARIA', 'Z49.1'
   ]);
-
   if (nonSecondaryCodes.has(c)) {
     return false;
   }
 
-  if (/DELIVERY|CESAREAN|CESARIAN|CAESAREAN|BREECH|MATERNITY|HEMODIALYSIS|PERITONEAL DIALYSIS|CHEMOTHERAPY|RADIOTHERAPY|ANIMAL BITE|TB-DOTS|SKELETAL FIXATION|PERCUTANEOUS SKELETAL|CLOSED REDUCTION|MANIPULATION/i.test(d)) {
+  const numCode = parseInt(c.replace(/\D/g, ''), 10);
+
+  // Check numeric RVS ranges for non-secondary categories:
+  if (!isNaN(numCode)) {
+    // Obstetric Deliveries & Cesarean range (59000 - 59899)
+    if (numCode >= 59000 && numCode <= 59899) return false;
+    // Fracture closed reductions / skeletal fixations range (24000 - 24999, 29000 - 29799)
+    if (numCode >= 24000 && numCode <= 24999) return false;
+    if (numCode >= 29000 && numCode <= 29799) return false;
+    // Radiology & Diagnostic Imaging (70000 - 79999)
+    if (numCode >= 70000 && numCode <= 79999) return false;
+    // Pathology & Laboratory (80000 - 89999)
+    if (numCode >= 80000 && numCode <= 89999) return false;
+    // Medicine, E&M, Consults, Non-surgical packages (90000 - 99199)
+    if (numCode >= 90000 && numCode <= 99199) return false;
+  }
+
+  // Keyword regex for non-secondary procedures
+  if (/DELIVERY|CESAREAN|CESARIAN|CAESAREAN|BREECH|MATERNITY|HEMODIALYSIS|PERITONEAL DIALYSIS|CHEMOTHERAPY|RADIOTHERAPY|ANIMAL BITE|TB-DOTS|SKELETAL FIXATION|PERCUTANEOUS SKELETAL|CLOSED REDUCTION|MANIPULATION|CAST|SPLINT|CONSULTATION|EXAMINATION|DIAGNOSTIC|X-RAY|ULTRASOUND|MRI|CT SCAN|LABORATORY/i.test(d)) {
     return false;
   }
 
