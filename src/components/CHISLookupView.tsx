@@ -49,10 +49,8 @@ function TypeBadge({ type }: { type: string }) {
 
 // Comprehensive PhilHealth ACR 2nd Case Rate Policy Engine (Circular 0035, s. 2013 & official PhilHealth CRS endpoint):
 // 1. ALL Medical Diagnoses (ICD-10) are 100% NOT APPLICABLE as 2nd Case Rate.
-// 2. All Diagnostic (70000-79999), Laboratory (80000-89999), E&M/Medicine (90000-99999 except 99460 ENCP),
-//    Obstetric Delivery (59000-59899, NSD01, MCP01), Fracture Reductions/Fixations (24000-24999, 29000-29799),
-//    Hemodialysis, Chemotherapy, Radiotherapy, ABTC are NOT APPLICABLE as 2nd Case Rate.
-// 3. Surgical Procedures (10000-69999, e.g. 16010 Debridement, 58120 D&C, 44950 Appendectomy, etc.) & 99460 ENCP ARE APPLICABLE as 2nd Case Rate.
+// 2. Obstetric Deliveries (59000-59899, NSD01, MCP01), Hemodialysis, Chemotherapy, Radiotherapy, ABTC are NOT APPLICABLE as 2nd Case Rate.
+// 3. Surgical & Orthopedic Procedures (10000-69999, e.g. 29065 Body Cast, 16010 Debridement, 58120 D&C, 44950 Appendectomy) & 99460 ENCP ARE APPLICABLE as 2nd Case Rate for Level 1, 2, 3 Hospitals.
 // 4. Exact live CRS boolean from https://crs.philhealth.gov.ph/ takes priority when present.
 function isSecondCaseRateAllowed(type: string, code: string, description: string, secondCaseRateApplicable?: boolean): boolean {
   // If live PhilHealth CRS endpoint explicitly specifies applicability, honor it 100%
@@ -76,9 +74,14 @@ function isSecondCaseRateAllowed(type: string, code: string, description: string
     return true;
   }
 
-  // Strict non-secondary code set
+  // Strict non-secondary code set (Deliveries, Maternity, Dialysis, Special Packages)
   const nonSecondaryCodes = new Set([
-    'NSD01', 'MCP01', 'MCP02', 'NCP01', 'ABTC', 'HIV01', 'HIV02', 'TBDOTS', 'MALARIA', 'Z49.1'
+    'NSD01', 'MCP01', 'MCP02', 'NCP01',
+    '59400', '59409', '59410', '59411', '59412', '59413', '59414', '59415',
+    '59510', '59511', '59513', '59514', '59515', '59525',
+    '59610', '59612', '59614', '59618', '59620', '59622',
+    '90935', '90937', '90945', '90947', '90999', 'Z49.1',
+    'ABTC', 'HIV01', 'HIV02', 'TBDOTS', 'MALARIA'
   ]);
   if (nonSecondaryCodes.has(c)) {
     return false;
@@ -90,9 +93,6 @@ function isSecondCaseRateAllowed(type: string, code: string, description: string
   if (!isNaN(numCode)) {
     // Obstetric Deliveries & Cesarean range (59000 - 59899)
     if (numCode >= 59000 && numCode <= 59899) return false;
-    // Fracture closed reductions / skeletal fixations range (24000 - 24999, 29000 - 29799)
-    if (numCode >= 24000 && numCode <= 24999) return false;
-    if (numCode >= 29000 && numCode <= 29799) return false;
     // Radiology & Diagnostic Imaging (70000 - 79999)
     if (numCode >= 70000 && numCode <= 79999) return false;
     // Pathology & Laboratory (80000 - 89999)
@@ -102,7 +102,7 @@ function isSecondCaseRateAllowed(type: string, code: string, description: string
   }
 
   // Keyword regex for non-secondary procedures
-  if (/DELIVERY|CESAREAN|CESARIAN|CAESAREAN|BREECH|MATERNITY|HEMODIALYSIS|PERITONEAL DIALYSIS|CHEMOTHERAPY|RADIOTHERAPY|ANIMAL BITE|TB-DOTS|SKELETAL FIXATION|PERCUTANEOUS SKELETAL|CLOSED REDUCTION|MANIPULATION|CAST|SPLINT|CONSULTATION|EXAMINATION|DIAGNOSTIC|X-RAY|ULTRASOUND|MRI|CT SCAN|LABORATORY/i.test(d)) {
+  if (/DELIVERY|CESAREAN|CESARIAN|CAESAREAN|BREECH|MATERNITY|HEMODIALYSIS|PERITONEAL DIALYSIS|CHEMOTHERAPY|RADIOTHERAPY|ANIMAL BITE|TB-DOTS|CONSULTATION|EXAMINATION|DIAGNOSTIC|X-RAY|ULTRASOUND|MRI|CT SCAN|LABORATORY/i.test(d)) {
     return false;
   }
 
