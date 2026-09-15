@@ -125,6 +125,9 @@ export interface CHISRecord {
   type: 'ICD' | 'RVS';
   effectivity_date?: string;
   secondCaseRateApplicable?: boolean;
+  second_case_rate?: number;
+  second_hospital_fee?: number;
+  second_professional_fee?: number;
 }
 
 export interface Favorite {
