@@ -74,9 +74,14 @@ function isSecondCaseRateAllowed(type: string, code: string, description: string
     return true;
   }
 
+  // ALL Non-Surgical Benefit Packages (P0000 Resuscitation, NSD01, MCP01, ABTC, etc.) are NOT APPLICABLE
+  if ((c.startsWith('P0') || /^P\d{4}$/.test(c) || /PACKAGE/i.test(d)) && !/NEWBORN CARE PACKAGE/i.test(d)) {
+    return false;
+  }
+
   // Strict non-secondary code set (Deliveries, Maternity, Dialysis, Special Packages)
   const nonSecondaryCodes = new Set([
-    'NSD01', 'MCP01', 'MCP02', 'NCP01',
+    'NSD01', 'MCP01', 'MCP02', 'NCP01', 'P0000', 'P0001', 'P0002', 'P0003',
     '59400', '59409', '59410', '59411', '59412', '59413', '59414', '59415',
     '59510', '59511', '59513', '59514', '59515', '59525',
     '59610', '59612', '59614', '59618', '59620', '59622',
