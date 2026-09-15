@@ -144,11 +144,12 @@ export async function GET(req: NextRequest) {
   const forceSync = searchParams.get('forceSync') === 'true';
 
   // 3. AUTOMATIC REAL-TIME PHILHEALTH CRS FALLBACK & SYNC
-  // If forceSync is true OR any search token had 0 matches in local database, fetch directly from live PhilHealth CRS server!
+  // If forceSync is true, OR any search token had 0 matches, OR any matching result has unconfirmed secondCaseRateApplicable, fetch directly from live PhilHealth CRS server!
   for (const token of searchTokens) {
     const matchedCount = tokenMatchedCount.get(token.toUpperCase()) || 0;
-    if ((forceSync || matchedCount === 0) && token.length >= 2) {
+    const hasUnconfirmed = results.some(r => r.secondCaseRateApplicable === undefined);
 
+    if ((forceSync || matchedCount === 0 || hasUnconfirmed) && token.length >= 2) {
       try {
         const liveRecords = await fetchLiveCRS(token);
         if (liveRecords && liveRecords.length > 0) {
@@ -166,7 +167,16 @@ export async function GET(req: NextRequest) {
             const recordType: 'ICD' | 'RVS' = isICD ? 'ICD' : 'RVS';
             const key = `${recordType}-${liveRec.code}`;
 
-            if (!seenCodes.has(key)) {
+            const existingResult = results.find(r => r.type === recordType && r.code.toUpperCase() === liveRec.code.toUpperCase());
+            if (existingResult) {
+              // Update existing local record with live CRS authoritative applicability & rates
+              existingResult.secondCaseRateApplicable = liveRec.secondCaseRate?.applicable;
+              if (liveRec.secondCaseRate?.applicable && liveRec.secondCaseRate.caseRate > 0) {
+                existingResult.second_case_rate = liveRec.secondCaseRate.caseRate;
+                existingResult.second_hospital_fee = liveRec.secondCaseRate.hospitalFee;
+                existingResult.second_professional_fee = liveRec.secondCaseRate.professionalFee;
+              }
+            } else if (!seenCodes.has(key)) {
               seenCodes.add(key);
               results.push({
                 code: liveRec.code,
@@ -180,25 +190,28 @@ export async function GET(req: NextRequest) {
                 matchedToken: token.toUpperCase(),
                 source: 'LIVE_CRS',
                 secondCaseRateApplicable: liveRec.secondCaseRate?.applicable,
+                second_case_rate: liveRec.secondCaseRate?.applicable ? liveRec.secondCaseRate.caseRate : 0,
+                second_hospital_fee: liveRec.secondCaseRate?.applicable ? liveRec.secondCaseRate.hospitalFee : 0,
+                second_professional_fee: liveRec.secondCaseRate?.applicable ? liveRec.secondCaseRate.professionalFee : 0,
               });
-
-              // Asynchronously upsert to Supabase database so future searches are instant
-              supabase
-                .from(isICD ? 'icd10_db' : 'rvs_db')
-                .upsert(
-                  {
-                    code: liveRec.code,
-                    description: liveRec.description,
-                    case_rate: liveRec.firstCaseRate.caseRate,
-                    hospital_fee: liveRec.firstCaseRate.hospitalFee,
-                    professional_fee: liveRec.firstCaseRate.professionalFee,
-                    effectivity_date: liveRec.effectivity,
-                    second_case_rate_applicable: liveRec.secondCaseRate?.applicable,
-                  },
-                  { onConflict: 'code' }
-                )
-                .then(() => {});
             }
+
+            // Asynchronously upsert to Supabase database so future searches are instant & permanently synchronized
+            supabase
+              .from(isICD ? 'icd10_db' : 'rvs_db')
+              .upsert(
+                {
+                  code: liveRec.code,
+                  description: liveRec.description,
+                  case_rate: liveRec.firstCaseRate.caseRate,
+                  hospital_fee: liveRec.firstCaseRate.hospitalFee,
+                  professional_fee: liveRec.firstCaseRate.professionalFee,
+                  effectivity_date: liveRec.effectivity,
+                  second_case_rate_applicable: liveRec.secondCaseRate?.applicable,
+                },
+                { onConflict: 'code' }
+              )
+              .then(() => {});
           }
         }
       } catch (err: any) {

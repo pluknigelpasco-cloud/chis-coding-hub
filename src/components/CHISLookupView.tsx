@@ -94,16 +94,12 @@ function isSecondCaseRateAllowed(type: string, code: string, description: string
 
   const numCode = parseInt(c.replace(/\D/g, ''), 10);
 
-  // Check numeric RVS ranges for non-secondary categories:
-  if (!isNaN(numCode)) {
-    // Obstetric Deliveries & Cesarean range (59000 - 59899)
-    if (numCode >= 59000 && numCode <= 59899) return false;
-    // Radiology & Diagnostic Imaging (70000 - 79999)
-    if (numCode >= 70000 && numCode <= 79999) return false;
-    // Pathology & Laboratory (80000 - 89999)
-    if (numCode >= 80000 && numCode <= 89999) return false;
-    // Medicine, E&M, Consults, Non-surgical packages (90000 - 99199)
-    if (numCode >= 90000 && numCode <= 99199) return false;
+  // Surgical RVS Range (10000 - 69999) EXCLUDING Obstetric Deliveries (59000 - 59899)
+  if (!isNaN(numCode) && numCode >= 10000 && numCode <= 69999) {
+    if (numCode >= 59000 && numCode <= 59899) {
+      return false; // Obstetric Deliveries & Cesarean section are 100% NOT APPLICABLE as 2nd Case Rate
+    }
+    return true; // Valid surgical procedure
   }
 
   // Keyword regex for non-secondary procedures
@@ -111,7 +107,8 @@ function isSecondCaseRateAllowed(type: string, code: string, description: string
     return false;
   }
 
-  return true;
+  // DEFAULT TO FALSE (NOT APPLICABLE) for all non-surgical, unknown, or non-RVS codes!
+  return false;
 }
 
 // Card View component for responsive mobile & modern grid
