@@ -128,10 +128,11 @@ function ResultCard({
   onOpenCRS: (code: string) => void;
   onSyncCRS?: (code: string) => void;
 }) {
+  const isENCP = record.code === '99460' || record.code === '99431' || record.code === '99432' || record.code === '99433' || /NEWBORN CARE PACKAGE/i.test(record.description);
   const secondApplicable = isSecondCaseRateAllowed(record.type, record.code, record.description, record.secondCaseRateApplicable);
-  const secondRate = secondApplicable ? (record.second_case_rate || record.case_rate * 0.5) : 0;
-  const secondHCI = secondApplicable ? (record.second_hospital_fee || (record.second_case_rate ? record.second_case_rate * 0.2 : record.hospital_fee * 0.5)) : 0;
-  const secondPF = secondApplicable ? (record.second_professional_fee || (record.second_case_rate ? record.second_case_rate * 0.8 : record.professional_fee * 0.5)) : 0;
+  const secondRate = secondApplicable ? (record.second_case_rate || (isENCP ? record.case_rate : record.case_rate * 0.5)) : 0;
+  const secondHCI = secondApplicable ? (record.second_hospital_fee || (isENCP ? record.hospital_fee : (record.second_case_rate ? record.second_case_rate * 0.2 : record.hospital_fee * 0.5))) : 0;
+  const secondPF = secondApplicable ? (record.second_professional_fee || (isENCP ? record.professional_fee : (record.second_case_rate ? record.second_case_rate * 0.8 : record.professional_fee * 0.5))) : 0;
 
   return (
     <div className="bg-white rounded-2xl p-4 sm:p-5 border-2 border-slate-200 shadow-xs hover:shadow-md hover:border-blue-400 transition-all flex flex-col justify-between group">
@@ -285,8 +286,11 @@ function ResultTableRow({
   onOpenCRS: (code: string) => void;
   onSyncCRS?: (code: string) => void;
 }) {
+  const isENCP = record.code === '99460' || record.code === '99431' || record.code === '99432' || record.code === '99433' || /NEWBORN CARE PACKAGE/i.test(record.description);
   const secondApplicable = isSecondCaseRateAllowed(record.type, record.code, record.description, record.secondCaseRateApplicable);
-  const secondRate = secondApplicable ? (record.second_case_rate || record.case_rate * 0.5) : 0;
+  const secondRate = secondApplicable ? (record.second_case_rate || (isENCP ? record.case_rate : record.case_rate * 0.5)) : 0;
+  const secondHCI = secondApplicable ? (record.second_hospital_fee || (isENCP ? record.hospital_fee : (record.second_case_rate ? record.second_case_rate * 0.2 : record.hospital_fee * 0.5))) : 0;
+  const secondPF = secondApplicable ? (record.second_professional_fee || (isENCP ? record.professional_fee : (record.second_case_rate ? record.second_case_rate * 0.8 : record.professional_fee * 0.5))) : 0;
 
   return (
     <tr className="hover:bg-slate-50/80 group transition-colors">
@@ -348,7 +352,10 @@ function ResultTableRow({
               {formatMoney(secondRate)}
             </span>
             <div className="text-[10px] text-blue-700 font-bold mt-1">
-              ✓ Allowed as 2nd Rate (50%)
+              {isENCP ? '✓ Allowed as 2nd Rate (100% Package)' : '✓ Allowed as 2nd Rate (50%)'}
+            </div>
+            <div className="text-[10px] text-slate-500 font-bold mt-0.5">
+              HCI: {formatMoney(secondHCI)} | PF: {formatMoney(secondPF)}
             </div>
           </div>
         ) : (
