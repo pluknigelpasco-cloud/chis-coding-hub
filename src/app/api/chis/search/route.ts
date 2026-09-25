@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
           case_rate: Number(row.case_rate) || 0,
           hospital_fee: Number(row.hospital_fee) || 0,
           professional_fee: Number(row.professional_fee) || 0,
-          effectivity_date: row.effectivity_date || null,
+          effectivity_date: row.effectivity_date || 'January 1, 2025 onwards',
           secondCaseRateApplicable: typeof row.second_case_rate_applicable === 'boolean' ? row.second_case_rate_applicable : false,
           type: 'ICD',
           isExactMatch: true,
@@ -89,7 +89,7 @@ export async function GET(req: NextRequest) {
           case_rate: Number(row.case_rate) || 0,
           hospital_fee: Number(row.hospital_fee) || 0,
           professional_fee: Number(row.professional_fee) || 0,
-          effectivity_date: row.effectivity_date || null,
+          effectivity_date: row.effectivity_date || 'January 1, 2025 onwards',
           secondCaseRateApplicable: typeof row.second_case_rate_applicable === 'boolean' ? row.second_case_rate_applicable : undefined,
           type: 'RVS',
           isExactMatch: true,
@@ -125,7 +125,7 @@ export async function GET(req: NextRequest) {
             case_rate: Number(row.case_rate) || 0,
             hospital_fee: Number(row.hospital_fee) || 0,
             professional_fee: Number(row.professional_fee) || 0,
-            effectivity_date: row.effectivity_date || null,
+            effectivity_date: row.effectivity_date || 'January 1, 2025 onwards',
             secondCaseRateApplicable: typeof row.second_case_rate_applicable === 'boolean' ? row.second_case_rate_applicable : (recordType === 'ICD' ? false : undefined),
             type: recordType,
             isExactMatch: false,
@@ -169,8 +169,11 @@ export async function GET(req: NextRequest) {
 
             const existingResult = results.find(r => r.type === recordType && r.code.toUpperCase() === liveRec.code.toUpperCase());
             if (existingResult) {
-              // Update existing local record with live CRS authoritative applicability & rates
+              // Update existing local record with live CRS authoritative applicability & rates & effectivity
               existingResult.secondCaseRateApplicable = liveRec.secondCaseRate?.applicable;
+              if (liveRec.effectivity) {
+                existingResult.effectivity_date = liveRec.effectivity;
+              }
               if (liveRec.secondCaseRate?.applicable && liveRec.secondCaseRate.caseRate > 0) {
                 existingResult.second_case_rate = liveRec.secondCaseRate.caseRate;
                 existingResult.second_hospital_fee = liveRec.secondCaseRate.hospitalFee;
@@ -184,7 +187,7 @@ export async function GET(req: NextRequest) {
                 case_rate: liveRec.firstCaseRate.caseRate,
                 hospital_fee: liveRec.firstCaseRate.hospitalFee,
                 professional_fee: liveRec.firstCaseRate.professionalFee,
-                effectivity_date: liveRec.effectivity,
+                effectivity_date: liveRec.effectivity || 'January 1, 2025 onwards',
                 type: recordType,
                 isExactMatch: liveRec.code.toUpperCase() === token.toUpperCase(),
                 matchedToken: token.toUpperCase(),
