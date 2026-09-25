@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
           case_rate: Number(row.case_rate) || 0,
           hospital_fee: Number(row.hospital_fee) || 0,
           professional_fee: Number(row.professional_fee) || 0,
-          effectivity_date: row.effectivity_date || 'January 1, 2025 onwards',
+          effectivity_date: row.effectivity_date || null,
           secondCaseRateApplicable: typeof row.second_case_rate_applicable === 'boolean' ? row.second_case_rate_applicable : false,
           type: 'ICD',
           isExactMatch: true,
@@ -89,7 +89,7 @@ export async function GET(req: NextRequest) {
           case_rate: Number(row.case_rate) || 0,
           hospital_fee: Number(row.hospital_fee) || 0,
           professional_fee: Number(row.professional_fee) || 0,
-          effectivity_date: row.effectivity_date || 'January 1, 2025 onwards',
+          effectivity_date: row.effectivity_date || null,
           secondCaseRateApplicable: typeof row.second_case_rate_applicable === 'boolean' ? row.second_case_rate_applicable : undefined,
           type: 'RVS',
           isExactMatch: true,
@@ -125,7 +125,7 @@ export async function GET(req: NextRequest) {
             case_rate: Number(row.case_rate) || 0,
             hospital_fee: Number(row.hospital_fee) || 0,
             professional_fee: Number(row.professional_fee) || 0,
-            effectivity_date: row.effectivity_date || 'January 1, 2025 onwards',
+            effectivity_date: row.effectivity_date || null,
             secondCaseRateApplicable: typeof row.second_case_rate_applicable === 'boolean' ? row.second_case_rate_applicable : (recordType === 'ICD' ? false : undefined),
             type: recordType,
             isExactMatch: false,
@@ -144,10 +144,10 @@ export async function GET(req: NextRequest) {
   const forceSync = searchParams.get('forceSync') === 'true';
 
   // 3. AUTOMATIC REAL-TIME PHILHEALTH CRS FALLBACK & SYNC
-  // If forceSync is true, OR any search token had 0 matches, OR any matching result has unconfirmed secondCaseRateApplicable, fetch directly from live PhilHealth CRS server!
+  // If forceSync is true, OR any search token had 0 matches, OR any matching result has unconfirmed secondCaseRateApplicable or missing effectivity_date, fetch directly from live PhilHealth CRS server!
   for (const token of searchTokens) {
     const matchedCount = tokenMatchedCount.get(token.toUpperCase()) || 0;
-    const hasUnconfirmed = results.some(r => r.secondCaseRateApplicable === undefined);
+    const hasUnconfirmed = results.some(r => r.secondCaseRateApplicable === undefined || !r.effectivity_date);
 
     if ((forceSync || matchedCount === 0 || hasUnconfirmed) && token.length >= 2) {
       try {
@@ -187,7 +187,7 @@ export async function GET(req: NextRequest) {
                 case_rate: liveRec.firstCaseRate.caseRate,
                 hospital_fee: liveRec.firstCaseRate.hospitalFee,
                 professional_fee: liveRec.firstCaseRate.professionalFee,
-                effectivity_date: liveRec.effectivity || 'January 1, 2025 onwards',
+                effectivity_date: liveRec.effectivity || null,
                 type: recordType,
                 isExactMatch: liveRec.code.toUpperCase() === token.toUpperCase(),
                 matchedToken: token.toUpperCase(),

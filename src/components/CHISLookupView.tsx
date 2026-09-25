@@ -142,7 +142,7 @@ function ResultCard({
             <div className="flex items-center gap-1.5 text-xs font-extrabold text-blue-900 bg-blue-50/90 border border-blue-200/90 px-2.5 py-1 rounded-lg shadow-2xs">
               <Calendar className="w-3.5 h-3.5 text-blue-600 shrink-0" />
               <span className="text-[10px] font-black uppercase tracking-wider text-blue-600">Effectivity:</span>
-              <span className="font-black text-slate-900">{record.effectivity_date || 'January 1, 2025 onwards'}</span>
+              <span className="font-black text-slate-900">{record.effectivity_date || 'PhilHealth Active Rate'}</span>
             </div>
           </div>
           <button
@@ -300,7 +300,7 @@ function ResultTableRow({
         <div className="mt-1.5 flex items-center gap-1.5 text-xs font-extrabold text-blue-900 bg-blue-50/90 border border-blue-200/90 px-2 py-0.5 rounded-lg w-fit shadow-2xs">
           <Calendar className="w-3.5 h-3.5 text-blue-600 shrink-0" />
           <span className="text-[10px] font-black uppercase tracking-wider text-blue-600">Effectivity:</span>
-          <span className="font-black text-slate-900">{record.effectivity_date || 'January 1, 2025 onwards'}</span>
+          <span className="font-black text-slate-900">{record.effectivity_date || 'PhilHealth Active Rate'}</span>
         </div>
       </td>
       <td className="px-4 py-3.5 text-sm text-slate-700 leading-snug align-top">
