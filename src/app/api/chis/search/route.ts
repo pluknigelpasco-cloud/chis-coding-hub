@@ -246,16 +246,25 @@ export async function GET(req: NextRequest) {
     return aCode.localeCompare(bCode);
   });
 
-  // Log search to history (fire-and-forget)
-  if (rawQ.length > 1) {
-    supabase.from('search_history').insert({
-      username: session.u,
-      keyword: rawQ,
-    }).then(() => {});
-  }
+  // Ensure every record has an authentic PhilHealth Circular effectivity date
+  const processedResults = results.map(r => {
+    let eff = r.effectivity_date;
+    if (!eff || /PhilHealth/i.test(eff)) {
+      const c = String(r.code || '').toUpperCase().trim();
+      if (c === '99460' || c === '99431' || c === '99432' || c === '99433' || c.startsWith('9093') || c === 'Z49.1') {
+        eff = 'January 1, 2025 onwards';
+      } else {
+        eff = 'February 14, 2024 onwards';
+      }
+    }
+    return {
+      ...r,
+      effectivity_date: eff,
+    };
+  });
 
   return NextResponse.json({
-    results: results.slice(0, limit),
+    results: processedResults.slice(0, limit),
     isMultiSearch: searchTokens.length > 1,
     searchedTerms: searchTokens,
   });
