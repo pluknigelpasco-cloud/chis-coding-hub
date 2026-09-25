@@ -250,12 +250,8 @@ export async function GET(req: NextRequest) {
   const processedResults = results.map(r => {
     let eff = r.effectivity_date;
     if (!eff || /PhilHealth/i.test(eff)) {
-      const c = String(r.code || '').toUpperCase().trim();
-      if (c === '99460' || c === '99431' || c === '99432' || c === '99433' || c.startsWith('9093') || c === 'Z49.1') {
-        eff = 'January 1, 2025 onwards';
-      } else {
-        eff = 'February 14, 2024 onwards';
-      }
+      // Current active PhilHealth package rates (C-Section 59513 @ P58,000, NSD 59400 @ P23,634, ENCP 99460 @ P5,752.50) are effective January 1, 2025 onwards
+      eff = 'January 1, 2025 onwards';
     }
     return {
       ...r,
