@@ -874,8 +874,18 @@ export default function RTHDeniedMonitoringView({
                             defaultValue={r.dateOfRefileReappeal || ''}
                             disabled={user.role === 'VIEWER'}
                             onChange={e => {
+                              // Only fire update if a complete valid date is entered (YYYY-MM-DD, 10 chars)
                               const val = e.target.value;
-                              updateRecord(r.id, { dateOfRefileReappeal: val });
+                              if (val && val.length === 10) {
+                                updateRecord(r.id, { dateOfRefileReappeal: val });
+                              }
+                            }}
+                            onBlur={e => {
+                              // Also catch any complete date on blur (covers manual typing)
+                              const val = e.target.value;
+                              if (val && val.length === 10 && val !== (r.dateOfRefileReappeal || '')) {
+                                updateRecord(r.id, { dateOfRefileReappeal: val });
+                              }
                             }}
                             className="w-full px-2 py-1 rounded-xl border border-slate-200 hover:border-brand-blue focus:border-brand-blue focus:ring-1 focus:ring-brand-blue text-xs font-semibold bg-white text-slate-800 shadow-sm transition-all"
                             title="Set Date of Refile / Re-Appeal"

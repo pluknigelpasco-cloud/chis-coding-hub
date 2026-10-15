@@ -62,6 +62,8 @@ export async function POST(req: NextRequest) {
         const admitted = formatDate(r.admitted_date);
         const discharged = formatDate(r.discharged_date);
         const refileDate = formatDate(r.refiled_date);
+        // dateOfRefileReappeal must be YYYY-MM-DD so <input type="date"> can read it
+        const refileDateIso: string = r.refiled_date ? String(r.refiled_date).substring(0, 10) : '';
         const monStatus: MonitoringClaimStatus = statusMap[r.id] || (r.refiled ? 'IN PROCESS' : 'RTH');
 
         return {
@@ -86,7 +88,7 @@ export async function POST(req: NextRequest) {
           retrieved: r.retrieved,
           completed: r.refiled,
           refiledDate: refileDate,
-          dateOfRefileReappeal: refileDate,
+          dateOfRefileReappeal: refileDateIso,
           monitoringStatus: monStatus,
           transmittedDate: refileDate,
           transmittedBy: r.transmitted_by,
@@ -105,6 +107,8 @@ export async function POST(req: NextRequest) {
         const admitted = formatDate(r.admitted_date);
         const discharged = formatDate(r.discharged_date);
         const refileDate = formatDate(r.refiled_date);
+        // dateOfRefileReappeal must be YYYY-MM-DD so <input type="date"> can read it
+        const refileDateIso: string = r.refiled_date ? String(r.refiled_date).substring(0, 10) : '';
         const monStatus: MonitoringClaimStatus = statusMap[r.id] || (r.retrieved ? 'IN PROCESS' : 'DENIED');
 
         return {
@@ -129,7 +133,7 @@ export async function POST(req: NextRequest) {
           retrieved: r.retrieved,
           completed: r.retrieved,
           refiledDate: refileDate,
-          dateOfRefileReappeal: refileDate,
+          dateOfRefileReappeal: refileDateIso,
           monitoringStatus: monStatus,
           transmittedDate: refileDate,
           transmittedBy: r.transmitted_by,
@@ -153,6 +157,8 @@ export async function POST(req: NextRequest) {
         const admitted = formatDate(r.admitted_date);
         const discharged = formatDate(r.discharged_date);
         const refileDate = formatDate(r.refiled_date);
+        // dateOfRefileReappeal must be YYYY-MM-DD so <input type="date"> can read it
+        const refileDateIso: string = r.refiled_date ? String(r.refiled_date).substring(0, 10) : '';
         const monStatus: MonitoringClaimStatus = statusMap[r.id] || (r.refiled ? 'IN PROCESS' : 'RTH');
 
         return {
@@ -177,7 +183,7 @@ export async function POST(req: NextRequest) {
           retrieved: r.retrieved,
           completed: r.refiled,
           refiledDate: refileDate,
-          dateOfRefileReappeal: refileDate,
+          dateOfRefileReappeal: refileDateIso,
           monitoringStatus: monStatus,
           transmittedDate: refileDate,
           transmittedBy: r.transmitted_by,
@@ -195,6 +201,8 @@ export async function POST(req: NextRequest) {
         const admitted = formatDate(r.admitted_date);
         const discharged = formatDate(r.discharged_date);
         const refileDate = formatDate(r.refiled_date);
+        // dateOfRefileReappeal must be YYYY-MM-DD so <input type="date"> can read it
+        const refileDateIso: string = r.refiled_date ? String(r.refiled_date).substring(0, 10) : '';
         const monStatus: MonitoringClaimStatus = statusMap[r.id] || (r.retrieved ? 'IN PROCESS' : 'DENIED');
 
         return {
@@ -219,7 +227,7 @@ export async function POST(req: NextRequest) {
           retrieved: r.retrieved,
           completed: r.retrieved,
           refiledDate: refileDate,
-          dateOfRefileReappeal: refileDate,
+          dateOfRefileReappeal: refileDateIso,
           monitoringStatus: monStatus,
           transmittedDate: refileDate,
           transmittedBy: r.transmitted_by,

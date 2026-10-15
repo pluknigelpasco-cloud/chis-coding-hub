@@ -183,7 +183,14 @@ export async function POST(req: NextRequest) {
       // Explicit Date of Refile / Re-Appeal
       if (body.dateOfRefileReappeal !== undefined || body.refiledDate !== undefined) {
         const d = body.dateOfRefileReappeal !== undefined ? body.dateOfRefileReappeal : body.refiledDate;
-        updates.refiled_date = d ? formatDateIso(new Date(d)) : null;
+        // Use the YYYY-MM-DD string directly — don't pass through new Date() which causes timezone offset issues
+        if (d && typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) {
+          updates.refiled_date = d;
+        } else if (!d) {
+          updates.refiled_date = null;
+        } else {
+          updates.refiled_date = formatDateIso(d);
+        }
       }
 
       // Explicit Monitoring Status
@@ -242,7 +249,10 @@ export async function POST(req: NextRequest) {
         message: 'Record updated successfully.',
         transmittedBy: updates.transmitted_by ?? current.transmitted_by,
         refiledDate: updates.refiled_date ?? current.refiled_date,
-        dateOfRefileReappeal: updates.refiled_date ?? current.refiled_date,
+        // Return dateOfRefileReappeal as raw YYYY-MM-DD so <input type="date"> can display it
+        dateOfRefileReappeal: updates.refiled_date
+          ? String(updates.refiled_date).substring(0, 10)
+          : (current.refiled_date ? String(current.refiled_date).substring(0, 10) : ''),
         monitoringStatus: body.monitoringStatus
       });
     } else if (module === 'INPATIENT') {
