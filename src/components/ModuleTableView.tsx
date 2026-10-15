@@ -150,6 +150,8 @@ export default function ModuleTableView({
               ...updates,
               transmittedBy: data.transmittedBy ?? r.transmittedBy,
               refiledDate: data.refiledDate ?? r.refiledDate,
+              dateOfRefileReappeal: data.dateOfRefileReappeal ?? (updates.dateOfRefileReappeal !== undefined ? updates.dateOfRefileReappeal : r.dateOfRefileReappeal),
+              monitoringStatus: data.monitoringStatus ?? updates.monitoringStatus ?? r.monitoringStatus,
               transmittedDate: data.transmittedDate ?? r.transmittedDate,
             };
           }
@@ -392,6 +394,22 @@ export default function ModuleTableView({
                   </button>
                 </th>
                 <th className="py-3.5 px-4">Status</th>
+                {isNoticeModule && (
+                  <th className="py-3.5 px-4 min-w-[170px] bg-blue-50/40 text-blue-900 border-x border-blue-100">
+                    <button onClick={() => toggleSort('dateOfRefileReappeal')} className="flex items-center gap-1">
+                      Date of Refile / Re-Appeal
+                      <ArrowUpDown className="w-3 h-3 text-blue-500" />
+                    </button>
+                  </th>
+                )}
+                {isNoticeModule && (
+                  <th className="py-3.5 px-4 min-w-[150px] bg-slate-100/60 text-slate-900">
+                    <button onClick={() => toggleSort('monitoringStatus')} className="flex items-center gap-1">
+                      Monitoring Status
+                      <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                    </button>
+                  </th>
+                )}
                 {isNoticeModule && <th className="py-3.5 px-4 min-w-[140px]">Transmitter</th>}
                 <th className="py-3.5 px-4 min-w-[200px]">
                   <span className="flex items-center gap-1">
@@ -406,7 +424,7 @@ export default function ModuleTableView({
             <tbody className="divide-y divide-slate-100 text-xs">
               {records.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className="py-16 text-center text-slate-400 font-bold">
+                  <td colSpan={14} className="py-16 text-center text-slate-400 font-bold">
                     {loading ? 'Loading records…' : 'No records found matching filters.'}
                   </td>
                 </tr>
@@ -507,6 +525,74 @@ export default function ModuleTableView({
                           {r.status}
                         </span>
                       </td>
+
+                      {/* Date of Refile / Re-Appeal Column */}
+                      {isNoticeModule && (
+                        <td className="py-2.5 px-3 min-w-[170px] bg-blue-50/20 border-x border-blue-100/70">
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="date"
+                              key={`refile-${r.id}-${r.dateOfRefileReappeal || ''}`}
+                              defaultValue={r.dateOfRefileReappeal || ''}
+                              disabled={user.role === 'VIEWER'}
+                              onChange={e => {
+                                const val = e.target.value;
+                                updateRecord(r.id, { dateOfRefileReappeal: val });
+                              }}
+                              className="w-full px-2 py-1 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-800"
+                              title="Set Date of Refile / Re-Appeal"
+                            />
+                            {!r.dateOfRefileReappeal ? (
+                              <button
+                                type="button"
+                                disabled={user.role === 'VIEWER'}
+                                onClick={() => updateRecord(r.id, { dateOfRefileReappeal: new Date().toISOString().split('T')[0] })}
+                                className="px-2 py-1 rounded-lg bg-blue-100 hover:bg-blue-200 text-brand-blue text-[10px] font-black shrink-0 transition-colors cursor-pointer"
+                                title="Set to today"
+                              >
+                                Today
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled={user.role === 'VIEWER'}
+                                onClick={() => updateRecord(r.id, { dateOfRefileReappeal: '' })}
+                                className="p-1 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 shrink-0 transition-colors cursor-pointer"
+                                title="Clear refile date"
+                              >
+                                ×
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      )}
+
+                      {/* Monitoring Status Column */}
+                      {isNoticeModule && (
+                        <td className="py-2.5 px-3 min-w-[150px] bg-slate-50/40">
+                          <select
+                            value={r.monitoringStatus || (module === 'RTH' ? (r.completed ? 'IN PROCESS' : 'RTH') : (r.completed ? 'IN PROCESS' : 'DENIED'))}
+                            disabled={user.role === 'VIEWER'}
+                            onChange={e => {
+                              updateRecord(r.id, { monitoringStatus: e.target.value });
+                            }}
+                            className={`w-full px-2 py-1.5 rounded-xl text-xs font-black border transition-all cursor-pointer ${
+                              r.monitoringStatus === 'WITH CHEQUE'
+                                ? 'bg-emerald-50 text-emerald-900 border-emerald-300'
+                                : r.monitoringStatus === 'IN PROCESS'
+                                ? 'bg-blue-50 text-blue-900 border-blue-300'
+                                : r.monitoringStatus === 'RTH'
+                                ? 'bg-amber-50 text-amber-900 border-amber-300'
+                                : 'bg-rose-50 text-rose-900 border-rose-300'
+                            }`}
+                          >
+                            <option value="IN PROCESS">IN PROCESS</option>
+                            <option value="RTH">RTH</option>
+                            <option value="DENIED">DENIED</option>
+                            <option value="WITH CHEQUE">WITH CHEQUE</option>
+                          </select>
+                        </td>
+                      )}
 
                       {/* Transmitter Selector */}
                       {isNoticeModule && (

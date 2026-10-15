@@ -84,6 +84,8 @@ export default function PrintNoticeModal({ records, onClose }: PrintNoticeModalP
                   <th className="py-2.5 px-3 print:py-1 print:px-1.5 text-right">Claim Amount</th>
                   <th className="py-2.5 px-3 print:py-1 print:px-1.5">Deficiency</th>
                   <th className="py-2.5 px-3 print:py-1 print:px-1.5 whitespace-nowrap">Deadline</th>
+                  <th className="py-2.5 px-3 print:py-1 print:px-1.5 whitespace-nowrap">Date of Refile / Re-Appeal</th>
+                  <th className="py-2.5 px-3 print:py-1 print:px-1.5">Status</th>
                   <th className="py-2.5 px-3 print:py-1 print:px-1.5">Remarks</th>
                 </tr>
               </thead>
@@ -103,6 +105,8 @@ export default function PrintNoticeModal({ records, onClose }: PrintNoticeModalP
                     </td>
                     <td className="py-2 px-3 print:py-1 print:px-1.5 text-[11px] print:text-[10px] text-slate-700 leading-snug">{r.deficiency}</td>
                     <td className="py-2 px-3 print:py-1 print:px-1.5 font-black text-slate-900 whitespace-nowrap">{r.expiryDate}</td>
+                    <td className="py-2 px-3 print:py-1 print:px-1.5 font-semibold text-slate-800 whitespace-nowrap">{r.dateOfRefileReappeal || '—'}</td>
+                    <td className="py-2 px-3 print:py-1 print:px-1.5 font-bold text-slate-900 whitespace-nowrap">{r.monitoringStatus || (r.completed ? 'IN PROCESS' : r.module || '—')}</td>
                     <td className="py-2 px-3 print:py-1 print:px-1.5 text-[11px] print:text-[10px] text-slate-700 italic">{r.remarks || '—'}</td>
                   </tr>
                 ))}
@@ -112,7 +116,7 @@ export default function PrintNoticeModal({ records, onClose }: PrintNoticeModalP
                     Total Amount ({records.length} claim{records.length > 1 ? 's' : ''}):
                   </td>
                   <td className="py-2 px-2.5 text-right text-sm font-black print:py-1 print:px-1.5">₱{formatCurrency(totalAmount)}</td>
-                  <td colSpan={3}></td>
+                  <td colSpan={5}></td>
                 </tr>
               </tbody>
             </table>

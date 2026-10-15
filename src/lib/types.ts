@@ -1,6 +1,7 @@
 export type UserRole = 'ADMIN' | 'STAFF' | 'VIEWER';
-export type ModuleType = 'RTH' | 'DENIED' | 'INPATIENT' | 'HD';
+export type ModuleType = 'RTH' | 'DENIED' | 'INPATIENT' | 'HD' | 'MONITORING';
 export type DeadlineStatus = 'SAFE' | 'WARNING' | 'CRITICAL' | 'EXPIRED' | 'COMPLETED' | 'NO_DATE';
+export type MonitoringClaimStatus = 'IN PROCESS' | 'RTH' | 'DENIED' | 'WITH CHEQUE';
 
 export interface AppUser {
   id: string;
@@ -31,6 +32,7 @@ export interface AppSettings {
 export interface BaseRecord {
   id: string;
   module: ModuleType;
+  noticeType?: 'RTH' | 'DENIED';
   reference: string;
   patientName: string;
   memberCategory?: string;
@@ -49,12 +51,27 @@ export interface BaseRecord {
   retrieved?: boolean;
   completed?: boolean;
   refiledDate?: string;
+  dateOfRefileReappeal?: string;
+  monitoringStatus?: MonitoringClaimStatus;
   transmittedDate?: string;
   transmittedBy?: string;
   ownerUserId?: string;
   remarks?: string;
   daysLeft?: number | null;
   status?: DeadlineStatus;
+}
+
+export interface MonitoringStats {
+  total: number;
+  totalAmount: number;
+  inProcess: number;
+  inProcessAmount: number;
+  rth: number;
+  rthAmount: number;
+  denied: number;
+  deniedAmount: number;
+  withCheque: number;
+  withChequeAmount: number;
 }
 
 export interface NoticePdfMeta {

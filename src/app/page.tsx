@@ -8,6 +8,7 @@ import CHISLookupView from '@/components/CHISLookupView';
 import AICodingView from '@/components/AICodingView';
 import UploadNoticeView from '@/components/UploadNoticeView';
 import ModuleTableView from '@/components/ModuleTableView';
+import RTHDeniedMonitoringView from '@/components/RTHDeniedMonitoringView';
 import ActivityLogView from '@/components/ActivityLogView';
 import AccountSettingsView from '@/components/AccountSettingsView';
 import PrintNoticeModal from '@/components/PrintNoticeModal';
@@ -146,6 +147,8 @@ export default function Home() {
               ? 'Retrieve, comply, and refile before the deadline'
               : currentView === 'DENIED'
               ? 'Track motion-for-reconsideration transmission deadlines'
+              : currentView === 'RTH_DENIED_MONITOR'
+              ? 'Track Date of Refile / Re-Appeal and monitoring status across all notice claims'
               : currentView === 'INPATIENT'
               ? 'Monitor discharge-date transmission deadlines'
               : currentView === 'HD'
@@ -188,6 +191,14 @@ export default function Home() {
           {currentView === 'CHIS_SEARCH' && <CHISLookupView />}
 
           {currentView === 'AI_CODING' && <AICodingView />}
+
+          {currentView === 'RTH_DENIED_MONITOR' && (
+            <RTHDeniedMonitoringView
+              user={user}
+              transmitters={transmitters}
+              onOpenPrint={records => setPrintRecords(records)}
+            />
+          )}
 
           {['RTH', 'DENIED', 'INPATIENT', 'HD'].includes(currentView) && (
             <ModuleTableView
