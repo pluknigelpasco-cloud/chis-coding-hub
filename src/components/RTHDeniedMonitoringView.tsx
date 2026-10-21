@@ -29,6 +29,110 @@ interface RTHDeniedMonitoringViewProps {
 
 const MONITORING_STATUSES: MonitoringClaimStatus[] = ['IN PROCESS', 'RTH', 'DENIED', 'WITH CHEQUE'];
 
+function RefileDateCell({
+  recordId,
+  initialDate,
+  disabled,
+  onSave,
+}: {
+  recordId: string;
+  initialDate?: string;
+  disabled?: boolean;
+  onSave: (dateStr: string) => void;
+}) {
+  const [val, setVal] = useState(initialDate || '');
+  const lastSavedRef = React.useRef(initialDate || '');
+
+  // Keep in sync when initialDate changes externally
+  useEffect(() => {
+    setVal(initialDate || '');
+    lastSavedRef.current = initialDate || '';
+  }, [initialDate]);
+
+  function commit(newDate: string) {
+    if (newDate === lastSavedRef.current) return;
+    lastSavedRef.current = newDate;
+    setVal(newDate);
+    onSave(newDate);
+  }
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <input
+        type="date"
+        value={val}
+        disabled={disabled}
+        onChange={e => {
+          const v = e.target.value;
+          setVal(v);
+
+          // In Chromium, when user types digits into year:
+          // Typing '2' results in "0002-MM-DD" (year = 2).
+          // Typing '0' results in "0020-MM-DD" (year = 20).
+          // Typing '2' results in "0202-MM-DD" (year = 202).
+          // Typing '6' results in "2026-MM-DD" (year = 2026).
+          // DO NOT commit until the 4-digit year is complete (year >= 2000 and <= 2099)!
+          // This allows typing '2026' completely without premature saving or losing focus!
+          if (v) {
+            const y = parseInt(v.substring(0, 4), 10);
+            if (!isNaN(y) && y >= 2000 && y <= 2099) {
+              commit(v);
+            }
+          }
+        }}
+        onBlur={e => {
+          const v = e.target.value;
+          if (v) {
+            const y = parseInt(v.substring(0, 4), 10);
+            if (!isNaN(y) && y >= 2000 && y <= 2099) {
+              commit(v);
+            } else if (y < 2000 && y > 0) {
+              // Incomplete or invalid year typed (e.g. 0002) - revert to last saved value
+              setVal(lastSavedRef.current);
+            }
+          } else if (lastSavedRef.current) {
+            // User cleared the field completely
+            commit('');
+          }
+        }}
+        onKeyDown={e => {
+          if (e.key === 'Enter') {
+            (e.target as HTMLInputElement).blur();
+          }
+        }}
+        className="w-full px-2 py-1 rounded-xl border border-slate-200 hover:border-brand-blue focus:border-brand-blue focus:ring-1 focus:ring-brand-blue text-xs font-semibold bg-white text-slate-800 shadow-sm transition-all"
+        title="Set Date of Refile / Re-Appeal"
+      />
+      {!val ? (
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => {
+            const today = new Date().toISOString().split('T')[0];
+            commit(today);
+          }}
+          className="px-2 py-1 rounded-lg bg-blue-100 hover:bg-blue-200 text-brand-blue text-[10px] font-black shrink-0 transition-colors cursor-pointer"
+          title="Set to today"
+        >
+          Today
+        </button>
+      ) : (
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => {
+            commit('');
+          }}
+          className="p-1 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 shrink-0 transition-colors cursor-pointer"
+          title="Clear refile date"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function RTHDeniedMonitoringView({
   user,
   transmitters,
@@ -867,51 +971,12 @@ export default function RTHDeniedMonitoringView({
 
                       {/* DATE OF REFILE / RE-APPEAL COLUMN */}
                       <td className="py-2.5 px-3 min-w-[190px] bg-blue-50/20 border-x border-blue-100/70">
-                        <div className="flex items-center gap-1.5">
-                          <input
-                            type="date"
-                            key={`refile-${r.id}-${r.dateOfRefileReappeal || ''}`}
-                            defaultValue={r.dateOfRefileReappeal || ''}
-                            disabled={user.role === 'VIEWER'}
-                            onChange={e => {
-                              // Only fire update if a complete valid date is entered (YYYY-MM-DD, 10 chars)
-                              const val = e.target.value;
-                              if (val && val.length === 10) {
-                                updateRecord(r.id, { dateOfRefileReappeal: val });
-                              }
-                            }}
-                            onBlur={e => {
-                              // Also catch any complete date on blur (covers manual typing)
-                              const val = e.target.value;
-                              if (val && val.length === 10 && val !== (r.dateOfRefileReappeal || '')) {
-                                updateRecord(r.id, { dateOfRefileReappeal: val });
-                              }
-                            }}
-                            className="w-full px-2 py-1 rounded-xl border border-slate-200 hover:border-brand-blue focus:border-brand-blue focus:ring-1 focus:ring-brand-blue text-xs font-semibold bg-white text-slate-800 shadow-sm transition-all"
-                            title="Set Date of Refile / Re-Appeal"
-                          />
-                          {!r.dateOfRefileReappeal ? (
-                            <button
-                              type="button"
-                              disabled={user.role === 'VIEWER'}
-                              onClick={() => updateRecord(r.id, { dateOfRefileReappeal: getTodayIso() })}
-                              className="px-2 py-1 rounded-lg bg-blue-100 hover:bg-blue-200 text-brand-blue text-[10px] font-black shrink-0 transition-colors cursor-pointer"
-                              title="Set to today"
-                            >
-                              Today
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              disabled={user.role === 'VIEWER'}
-                              onClick={() => updateRecord(r.id, { dateOfRefileReappeal: '' })}
-                              className="p-1 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 shrink-0 transition-colors cursor-pointer"
-                              title="Clear refile date"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
+                        <RefileDateCell
+                          recordId={r.id}
+                          initialDate={r.dateOfRefileReappeal}
+                          disabled={user.role === 'VIEWER'}
+                          onSave={dateVal => updateRecord(r.id, { dateOfRefileReappeal: dateVal })}
+                        />
                       </td>
 
                       {/* STATUS COLUMN */}

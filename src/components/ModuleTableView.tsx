@@ -15,6 +15,99 @@ interface ModuleTableViewProps {
   onOpenPrint: (records: BaseRecord[]) => void;
 }
 
+function RefileDateCell({
+  recordId,
+  initialDate,
+  disabled,
+  onSave,
+}: {
+  recordId: string;
+  initialDate?: string;
+  disabled?: boolean;
+  onSave: (dateStr: string) => void;
+}) {
+  const [val, setVal] = useState(initialDate || '');
+  const lastSavedRef = React.useRef(initialDate || '');
+
+  useEffect(() => {
+    setVal(initialDate || '');
+    lastSavedRef.current = initialDate || '';
+  }, [initialDate]);
+
+  function commit(newDate: string) {
+    if (newDate === lastSavedRef.current) return;
+    lastSavedRef.current = newDate;
+    setVal(newDate);
+    onSave(newDate);
+  }
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <input
+        type="date"
+        value={val}
+        disabled={disabled}
+        onChange={e => {
+          const v = e.target.value;
+          setVal(v);
+          if (v) {
+            const y = parseInt(v.substring(0, 4), 10);
+            if (!isNaN(y) && y >= 2000 && y <= 2099) {
+              commit(v);
+            }
+          }
+        }}
+        onBlur={e => {
+          const v = e.target.value;
+          if (v) {
+            const y = parseInt(v.substring(0, 4), 10);
+            if (!isNaN(y) && y >= 2000 && y <= 2099) {
+              commit(v);
+            } else if (y < 2000 && y > 0) {
+              setVal(lastSavedRef.current);
+            }
+          } else if (lastSavedRef.current) {
+            commit('');
+          }
+        }}
+        onKeyDown={e => {
+          if (e.key === 'Enter') {
+            (e.target as HTMLInputElement).blur();
+          }
+        }}
+        className="w-full px-2 py-1 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-800"
+        title="Set Date of Refile / Re-Appeal"
+      />
+      {!val ? (
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => {
+            const today = new Date().toISOString().split('T')[0];
+            commit(today);
+          }}
+          className="px-2 py-1 rounded-lg bg-blue-100 hover:bg-blue-200 text-brand-blue text-[10px] font-black shrink-0 transition-colors cursor-pointer"
+          title="Set to today"
+        >
+          Today
+        </button>
+      ) : (
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => {
+            commit('');
+          }}
+          className="p-1 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 shrink-0 transition-colors cursor-pointer"
+          title="Clear refile date"
+        >
+          <span className="font-bold text-xs leading-none">×</span>
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function ModuleTableView({
   module,
   title,
@@ -529,41 +622,12 @@ export default function ModuleTableView({
                       {/* Date of Refile / Re-Appeal Column */}
                       {isNoticeModule && (
                         <td className="py-2.5 px-3 min-w-[170px] bg-blue-50/20 border-x border-blue-100/70">
-                          <div className="flex items-center gap-1.5">
-                            <input
-                              type="date"
-                              key={`refile-${r.id}-${r.dateOfRefileReappeal || ''}`}
-                              defaultValue={r.dateOfRefileReappeal || ''}
-                              disabled={user.role === 'VIEWER'}
-                              onChange={e => {
-                                const val = e.target.value;
-                                updateRecord(r.id, { dateOfRefileReappeal: val });
-                              }}
-                              className="w-full px-2 py-1 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-800"
-                              title="Set Date of Refile / Re-Appeal"
-                            />
-                            {!r.dateOfRefileReappeal ? (
-                              <button
-                                type="button"
-                                disabled={user.role === 'VIEWER'}
-                                onClick={() => updateRecord(r.id, { dateOfRefileReappeal: new Date().toISOString().split('T')[0] })}
-                                className="px-2 py-1 rounded-lg bg-blue-100 hover:bg-blue-200 text-brand-blue text-[10px] font-black shrink-0 transition-colors cursor-pointer"
-                                title="Set to today"
-                              >
-                                Today
-                              </button>
-                            ) : (
-                              <button
-                                type="button"
-                                disabled={user.role === 'VIEWER'}
-                                onClick={() => updateRecord(r.id, { dateOfRefileReappeal: '' })}
-                                className="p-1 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 shrink-0 transition-colors cursor-pointer"
-                                title="Clear refile date"
-                              >
-                                ×
-                              </button>
-                            )}
-                          </div>
+                          <RefileDateCell
+                            recordId={r.id}
+                            initialDate={r.dateOfRefileReappeal}
+                            disabled={user.role === 'VIEWER'}
+                            onSave={dateVal => updateRecord(r.id, { dateOfRefileReappeal: dateVal })}
+                          />
                         </td>
                       )}
 

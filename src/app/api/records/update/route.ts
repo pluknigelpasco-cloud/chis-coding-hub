@@ -90,8 +90,11 @@ export async function POST(req: NextRequest) {
           rthBatchUpdates.refiled = true;
           deniedBatchUpdates.retrieved = true;
           if (body.dateOfRefileReappeal) {
-            rthBatchUpdates.refiled_date = formatDateIso(new Date(body.dateOfRefileReappeal));
-            deniedBatchUpdates.refiled_date = formatDateIso(new Date(body.dateOfRefileReappeal));
+            const dVal = typeof body.dateOfRefileReappeal === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.dateOfRefileReappeal)
+              ? body.dateOfRefileReappeal
+              : formatDateIso(body.dateOfRefileReappeal);
+            rthBatchUpdates.refiled_date = dVal;
+            deniedBatchUpdates.refiled_date = dVal;
           }
         } else if (monStatus === 'RTH') {
           rthBatchUpdates.refiled = false;
@@ -106,7 +109,9 @@ export async function POST(req: NextRequest) {
       }
 
       if (body.dateOfRefileReappeal !== undefined) {
-        const dateVal = body.dateOfRefileReappeal ? formatDateIso(new Date(body.dateOfRefileReappeal)) : null;
+        const dateVal = body.dateOfRefileReappeal && typeof body.dateOfRefileReappeal === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.dateOfRefileReappeal)
+          ? body.dateOfRefileReappeal
+          : (body.dateOfRefileReappeal ? formatDateIso(body.dateOfRefileReappeal) : null);
         await Promise.all([
           supabase.from('rth_notices').update({ refiled_date: dateVal, updated_at: now.toISOString() }).in('id', targetIds),
           supabase.from('denied_notices').update({ refiled_date: dateVal, updated_at: now.toISOString() }).in('id', targetIds)
@@ -244,15 +249,13 @@ export async function POST(req: NextRequest) {
         details: updates
       });
 
+      const finalRefiledDate = updates.refiled_date !== undefined ? updates.refiled_date : current.refiled_date;
       return NextResponse.json({
         ok: true,
         message: 'Record updated successfully.',
-        transmittedBy: updates.transmitted_by ?? current.transmitted_by,
-        refiledDate: updates.refiled_date ?? current.refiled_date,
-        // Return dateOfRefileReappeal as raw YYYY-MM-DD so <input type="date"> can display it
-        dateOfRefileReappeal: updates.refiled_date
-          ? String(updates.refiled_date).substring(0, 10)
-          : (current.refiled_date ? String(current.refiled_date).substring(0, 10) : ''),
+        transmittedBy: updates.transmitted_by !== undefined ? updates.transmitted_by : current.transmitted_by,
+        refiledDate: finalRefiledDate,
+        dateOfRefileReappeal: finalRefiledDate ? String(finalRefiledDate).substring(0, 10) : '',
         monitoringStatus: body.monitoringStatus
       });
     } else if (module === 'INPATIENT') {
